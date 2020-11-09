@@ -17,6 +17,7 @@ except IndexError:
 import carla
 from carla_birdeye_view import BirdViewProducer, BirdViewCropType, PixelDimensions
 
+
 class CarEnv:
     actor_list = []
     collision_hist = []
@@ -50,7 +51,6 @@ class CarEnv:
         self.collision_hist = []
         self.actor_list = []
         self.lane_hist = []
-        self.other_vehicles_list = []
 
         self.transform = self.world.get_map().get_spawn_points()[2]
 
@@ -78,40 +78,26 @@ class CarEnv:
         return self.get_state()
 
     def step(self, action):
-        if ACC_ACTIONS[action % len(ACC_ACTIONS)] < 0:
-            self.vehicle.apply_control(
-                carla.VehicleControl(brake=-ACC_ACTIONS[action % len(ACC_ACTIONS)], steer=STEER_ACTIONS[int(action / len(STEER_ACTIONS))]))
-        else:
-            self.vehicle.apply_control(carla.VehicleControl(throttle=ACC_ACTIONS[action % len(ACC_ACTIONS)], steer=STEER_ACTIONS[int(action / len(STEER_ACTIONS))]))
+        self.car_control(action)
+
+        reward = 0
+        done = False
 
         v = self.vehicle.get_velocity()
         kmh = int(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2))
         self.speed = kmh
 
-        if self.previous_location == None:
-            self.previous_location = self.vehicle.get_transform().location
-        else:
-            loc = self.vehicle.get_transform().location
-            self.distance += math.sqrt((loc.x - self.previous_location.x)**2 + (loc.y - self.previous_location.y)**2)
-            self.previous_location = loc
+        wrong_loc = self.wrong_location()
 
-        self.distance += math.sqrt(v.x**2 + v.y**2 + v.z**2)/FPS
+        if wrong_loc == 1:
+            reward -= 10
+        elif wrong_loc == 2:
+            reward -= 20
 
-        dif = abs(abs(self.vehicle.get_transform().rotation.yaw) - self.world.get_map().get_waypoint(self.vehicle.get_location()).transform.rotation.yaw)
-
-        if 90 <= dif <= 270:
-            self.wrong_steps += 1
-        elif self.world.get_map().get_waypoint(self.vehicle.get_location(), project_to_road=False, lane_type=carla.LaneType.Sidewalk) is not None:
-            self.wrong_steps += 1
-
-        done = False
-        reward = int(kmh/10)
+        reward += int(kmh/5)
 
         reward -= len(self.lane_hist)
         self.lane_hist = []
-
-        if kmh > self.vehicle.get_speed_limit()*3.6:
-            reward -= 20
 
         if len(self.collision_hist) != 0:
             done = True
@@ -121,6 +107,42 @@ class CarEnv:
             done = True
 
         return self.get_state(), reward, done, None
+
+    def car_control(self, action):
+        steer_action = int(action / len(STEER_ACTIONS))
+        acc_action = action % len(ACC_ACTIONS)
+
+        if ACC_ACTIONS[acc_action] < 0:
+            self.vehicle.apply_control(
+                carla.VehicleControl(brake=-ACC_ACTIONS[acc_action], steer=STEER_ACTIONS[steer_action])
+            )
+        else:
+            self.vehicle.apply_control(
+                carla.VehicleControl(throttle=ACC_ACTIONS[acc_action], steer=STEER_ACTIONS[steer_action])
+            )
+
+    def update_KPIs(self):
+        if self.previous_location == None:
+            self.previous_location = self.vehicle.get_transform().location
+        else:
+            loc = self.vehicle.get_transform().location
+            self.distance += math.sqrt((loc.x - self.previous_location.x)**2 + (loc.y - self.previous_location.y)**2)
+            self.previous_location = loc
+
+        if self.wrong_location() > 0:
+            self.wrong_steps += 1
+
+    def wrong_location(self):
+        dif = abs(abs(self.vehicle.get_transform().rotation.yaw) - self.world.get_map().get_waypoint(
+            self.vehicle.get_location()).transform.rotation.yaw)
+
+        if 90 <= dif <= 270:
+            return 1
+        elif self.world.get_map().get_waypoint(self.vehicle.get_location(), project_to_road=False,
+                                               lane_type=carla.LaneType.Sidewalk) is not None:
+            return 2
+
+        return 0
 
     def get_state(self):
         return self.birdview_producer.produce(agent_vehicle=self.vehicle).transpose((2, 1, 0))
