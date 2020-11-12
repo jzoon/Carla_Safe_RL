@@ -5,6 +5,7 @@ import time
 import sys
 import glob
 import os
+import numpy as np
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -35,13 +36,18 @@ class CarEnv:
         self.blueprint_library = self.world.get_blueprint_library()
         self.model_3 = self.blueprint_library.filter('model3')[0]
 
+        self.destination = self.world.get_map().get_spawn_points()[2]
+        self.destination.location.x -= 30
+
         self.birdview_producer = BirdViewProducer(
+            self.destination,
             self.client,
             target_size=PixelDimensions(width=WIDTH, height=HEIGHT),
             pixels_per_meter=PIXELS_PER_METER,
             crop_type=BirdViewCropType.FRONT_AND_REAR_AREA)
 
-        spawn_npc.main()
+        #spawn_npc.main()
+
 
     def reset(self):
         self.distance = 0
@@ -52,9 +58,8 @@ class CarEnv:
         self.actor_list = []
         self.lane_hist = []
 
-        self.transform = self.world.get_map().get_spawn_points()[2]
-
         self.vehicle = None
+        self.transform = self.world.get_map().get_spawn_points()[2]
 
         while self.vehicle is None:
             self.vehicle = self.world.try_spawn_actor(self.model_3, self.transform)
@@ -73,6 +78,9 @@ class CarEnv:
         self.actor_list.append(self.lanesensor)
         self.lanesensor.listen(lambda event: self.lane_hist.append(event))
 
+        self.previous_distance_to_destination = self.calculate_distance(self.destination.location.x, self.transform.location.x, self.destination.location.y, self.transform.location.y)
+
+        self.birdview_producer.produce(agent_vehicle=self.vehicle)
         self.episode_start = time.time()
 
         return self.get_state()
@@ -80,31 +88,40 @@ class CarEnv:
     def step(self, action):
         self.car_control(action)
 
-        reward = 0
         done = False
-
+        current_location = self.vehicle.get_location()
+        self.update_KPIs(current_location)
         v = self.vehicle.get_velocity()
         kmh = int(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2))
         self.speed = kmh
 
-        wrong_loc = self.wrong_location()
+        reward = 0
 
-        if wrong_loc == 1:
+        if self.wrong_location() != 0:
             reward -= 10
-        elif wrong_loc == 2:
-            reward -= 20
 
         reward += int(kmh/5)
 
-        reward -= len(self.lane_hist)
+        reward -= len(self.lane_hist)*10
         self.lane_hist = []
 
         if len(self.collision_hist) != 0:
             done = True
-            reward = -500
+            reward = -200
+
+        dist_to_dest = self.calculate_distance(current_location.x, self.destination.location.x, current_location.y, self.destination.location.y)
+        if self.passed_destination(current_location, self.previous_location):
+            reward = 200
+            done = True
+            self.previous_distance_to_destination = 0
+        elif dist_to_dest < self.previous_distance_to_destination:
+            reward += 2 * (self.previous_distance_to_destination - dist_to_dest)
+            self.previous_distance_to_destination = dist_to_dest
 
         if self.episode_start + SECONDS_PER_EPISODE < time.time():
             done = True
+
+        self.previous_location = current_location
 
         return self.get_state(), reward, done, None
 
@@ -121,13 +138,11 @@ class CarEnv:
                 carla.VehicleControl(throttle=ACC_ACTIONS[acc_action], steer=STEER_ACTIONS[steer_action])
             )
 
-    def update_KPIs(self):
+    def update_KPIs(self, current_location):
         if self.previous_location == None:
-            self.previous_location = self.vehicle.get_transform().location
+            self.previous_location = current_location
         else:
-            loc = self.vehicle.get_transform().location
-            self.distance += math.sqrt((loc.x - self.previous_location.x)**2 + (loc.y - self.previous_location.y)**2)
-            self.previous_location = loc
+            self.distance += self.calculate_distance(current_location.x, self.previous_location.x, current_location.y, self.previous_location.y)
 
         if self.wrong_location() > 0:
             self.wrong_steps += 1
@@ -144,11 +159,25 @@ class CarEnv:
 
         return 0
 
+    def passed_destination(self, current_location, previous_location):
+        up_x = max(current_location.x, previous_location.x) + 1
+        down_x = min(current_location.x, previous_location.x) - 1
+        up_y = max(current_location.y, previous_location.y) + 1
+        down_y = min(current_location.y, previous_location.y) - 1
+
+        if down_x < self.destination.location.x < up_x and down_y < self.destination.location.y < up_y:
+            return True
+
+        return False
+
     def get_state(self):
         return self.birdview_producer.produce(agent_vehicle=self.vehicle).transpose((2, 1, 0))
 
     def get_KPI(self):
-        return self.distance, self.wrong_steps
+        return self.distance, self.wrong_steps, self.previous_distance_to_destination
 
     def get_speed_limit(self):
         return self.vehicle.get_speed_limit()*3.6
+
+    def calculate_distance(self, x1, x2, y1, y2):
+        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)

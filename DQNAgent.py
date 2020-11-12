@@ -27,13 +27,13 @@ class DQNAgent:
     def create_model(self):
         inputs = layers.Input(shape=(WIDTH, HEIGHT, 9,))
 
-        layer1 = layers.Conv2D(32, 8, strides=4, activation="relu")(inputs)
-        layer2 = layers.Conv2D(64, 4, strides=2, activation="relu")(layer1)
-        layer3 = layers.Conv2D(64, 3, strides=1, activation="relu")(layer2)
+        layer1 = layers.Conv2D(64, 8, strides=4, activation="relu")(inputs)
+        layer2 = layers.Conv2D(128, 4, strides=2, activation="relu")(layer1)
+        layer3 = layers.Conv2D(128, 3, strides=1, activation="relu")(layer2)
 
         layer4 = layers.Flatten()(layer3)
 
-        layer5 = layers.Dense(512, activation="relu")(layer4)
+        layer5 = layers.Dense(1024, activation="relu")(layer4)
         action = layers.Dense(len(STEER_ACTIONS)*len(ACC_ACTIONS), activation="linear")(layer5)
 
         model = Model(inputs=inputs, outputs=action)

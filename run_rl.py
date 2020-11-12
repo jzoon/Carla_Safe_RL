@@ -4,10 +4,11 @@ import time
 import tensorflow as tf
 import keras.backend.tensorflow_backend as backend
 from keras.models import load_model
-from old.my_rl3 import CarEnv, MEMORY_FRACTION, HEIGHT, WIDTH
+from parameters import *
+from CarEnv import *
 
 
-MODEL_PATH = "models/Q300__-497.00max_-530.00avg_-574.00min__1604913518.model"
+MODEL_PATH = "models/no_traffic_lr_0.00025___265.72max___34.36avg_-207.15min__1605114349.model"
 
 if __name__ == "__main__":
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
@@ -39,7 +40,7 @@ if __name__ == "__main__":
 
             frame_time = time.time() - step_start
             fps_counter.append(frame_time)
-            print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward} ')
+            print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward} | qs : {qs}')
 
         print()
         print("Simulation time: " + str(time.time() - start_time))

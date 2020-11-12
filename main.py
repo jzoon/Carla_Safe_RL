@@ -25,6 +25,7 @@ if __name__ == '__main__':
     times = []
     distances = []
     wrong_locations = []
+    dest_distances = []
 
     random.seed(1)
     np.random.seed(1)
@@ -79,6 +80,7 @@ if __name__ == '__main__':
         times.append(time.time()-episode_start)
         distances.append(env.get_KPI()[0])
         wrong_locations.append(env.get_KPI()[1]/step)
+        dest_distances.append(env.get_KPI()[2])
 
         ep_rewards.append(episode_reward)
         if not episode % AGGREGATE_STATS_EVERY or episode == 1:
@@ -88,9 +90,11 @@ if __name__ == '__main__':
             avg_time = sum(times[-AGGREGATE_STATS_EVERY:]) / len(times[-AGGREGATE_STATS_EVERY:])
             avg_distance = sum(distances[-AGGREGATE_STATS_EVERY:]) / len(distances[-AGGREGATE_STATS_EVERY:])
             avg_wrong_location = sum(wrong_locations[-AGGREGATE_STATS_EVERY:]) / len(wrong_locations[-AGGREGATE_STATS_EVERY:])
+            avg_dest_distance = sum(dest_distances[-AGGREGATE_STATS_EVERY:]) / len(dest_distances[-AGGREGATE_STATS_EVERY:])
 
             agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward,
-                                           epsilon=epsilon, sim_time=avg_time, distance_traveled=avg_distance, wrong_location=avg_wrong_location)
+                                           epsilon=epsilon, sim_time=avg_time, distance_traveled=avg_distance,
+                                           wrong_location=avg_wrong_location, distance_towards_destination=avg_dest_distance)
 
             # Save model, but only when min reward is greater or equal a set value
             #if episode % int(EPISODES/10) == 0:
