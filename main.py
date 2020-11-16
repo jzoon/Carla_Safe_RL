@@ -31,8 +31,8 @@ if __name__ == '__main__':
     np.random.seed(1)
     tf.set_random_seed(1)
 
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
-    backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
+    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
+    #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
 
     agent = DQNAgent()
     env = CarEnv()
