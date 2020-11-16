@@ -33,6 +33,11 @@ class CarEnv:
         self.world = self.client.load_world('Town01')
         self.world.set_weather(carla.WeatherParameters.ClearSunset)
 
+        if not RENDERING:
+            settings = self.world.get_settings()
+            settings.no_rendering_mode = True
+            self.world.apply_settings(settings)
+
         self.blueprint_library = self.world.get_blueprint_library()
         self.model_3 = self.blueprint_library.filter('model3')[0]
 
@@ -174,7 +179,7 @@ class CarEnv:
         return self.birdview_producer.produce(agent_vehicle=self.vehicle).transpose((2, 1, 0))
 
     def get_KPI(self):
-        return self.distance, self.wrong_steps, self.previous_distance_to_destination
+        return self.distance, len(self.collision_hist) > 0, self.wrong_steps, self.previous_distance_to_destination
 
     def get_speed_limit(self):
         return self.vehicle.get_speed_limit()*3.6
