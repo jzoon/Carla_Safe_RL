@@ -51,7 +51,8 @@ class CarEnv:
             pixels_per_meter=PIXELS_PER_METER,
             crop_type=BirdViewCropType.FRONT_AND_REAR_AREA)
 
-        #spawn_npc.main()
+        if OTHER_TRAFFIC:
+            spawn_npc.main()
 
 
     def reset(self):

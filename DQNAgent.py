@@ -58,14 +58,18 @@ class DQNAgent:
         new_current_states = np.array([transition[3] for transition in minibatch])
 
         with self.graph.as_default():
-            future_qs_list = self.target_model.predict(new_current_states, PREDICTION_BATCH_SIZE)
+            future_qs_list_target = self.target_model.predict(new_current_states, PREDICTION_BATCH_SIZE)
+
+        with self.graph.as_default():
+            future_qs_list_online = self.model.predict(new_current_states, PREDICTION_BATCH_SIZE)
 
         X = []
         y = []
 
         for index, (current_state, action, reward, new_state, done) in enumerate(minibatch):
             if not done:
-                max_future_q = np.max(future_qs_list[index])
+                max_future_q_arg = np.argmax(future_qs_list_online[index])
+                max_future_q = future_qs_list_target[index, max_future_q_arg]
                 new_q = reward + DISCOUNT * max_future_q
             else:
                 new_q = reward
