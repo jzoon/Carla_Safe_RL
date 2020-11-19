@@ -42,7 +42,7 @@ class CarEnv:
         self.model_3 = self.blueprint_library.filter('model3')[0]
 
         self.destination = self.world.get_map().get_spawn_points()[2]
-        self.destination.location.x -= 30
+        self.destination.location.x -= DESTINATION_DISTANCE
 
         self.birdview_producer = BirdViewProducer(
             self.destination,
