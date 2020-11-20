@@ -102,7 +102,8 @@ if __name__ == '__main__':
             # Save model, but only when min reward is greater or equal a set value
             #if episode % int(EPISODES/10) == 0:
             #    agent.model.save(
-            #        f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
+            #        f'temp_models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
+
 
         if epsilon > MIN_EPSILON:
             epsilon *= EPSILON_DECAY
@@ -111,4 +112,3 @@ if __name__ == '__main__':
     agent.terminate = True
     trainer_thread.join()
     agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
-

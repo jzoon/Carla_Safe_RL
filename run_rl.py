@@ -26,12 +26,14 @@ if __name__ == "__main__":
         env.collision_hist = []
         step = 0
         start_time = time.time()
-
+        action = 13
         while True:
             step += 1
             step_start = time.time()
             qs = model.predict(np.expand_dims(current_state, axis=0))[0]
-            action = np.argmax(qs)
+            if env.speed > 50:
+                action = 11#np.argmax(qs)
+
 
             new_state, reward, done, _ = env.step(action)
             current_state = new_state
@@ -41,7 +43,8 @@ if __name__ == "__main__":
 
             frame_time = time.time() - step_start
             fps_counter.append(frame_time)
-            print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
+            #print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
+            print(env.vehicle.get_acceleration())
 
         print()
         print("Colissions per m: " + str(int(env.get_KPI()[1]/env.get_KPI()[0])))

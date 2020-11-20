@@ -187,3 +187,29 @@ class CarEnv:
 
     def calculate_distance(self, x1, x2, y1, y2):
         return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+    def shield(self, sorted_actions):
+        for action in sorted_actions:
+            if self.is_safe(action):
+                return action
+
+        print("No safe action found. RIP")
+        return -1
+
+    def is_safe(self, action):
+        # get state
+        # transform state to new car position after 0.5 seconds
+        # check area which should be empty in that space
+        # check if those areas are empty in the right layers (so not the ego vehicle layer)
+        return True
+
+    def get_new_transform(self, action):
+        current_transform = self.vehicle.get_transform()
+        acc_action = action % len(ACC_ACTIONS)
+
+        if acc_action < 2:
+            acc_action = acc_action * BRAKE_POWER
+        elif acc_action > 2:
+            acc_action = acc_action * ACC_POWER
+
+        
