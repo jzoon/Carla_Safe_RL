@@ -6,6 +6,7 @@ import sys
 import glob
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -92,6 +93,7 @@ class CarEnv:
         return self.get_state()
 
     def step(self, action):
+        self.state = self.get_state()
         self.car_control(action)
 
         done = False
@@ -129,7 +131,7 @@ class CarEnv:
 
         self.previous_location = current_location
 
-        return self.get_state(), reward, done, None
+        return self.state, reward, done, None
 
     def car_control(self, action):
         steer_action = int(action / len(STEER_ACTIONS))
@@ -197,14 +199,28 @@ class CarEnv:
         return -1
 
     def is_safe(self, action):
+        x_dif, y_dif = self.get_new_transform(action)
+
         # get state
         # transform state to new car position after 0.5 seconds
         # check area which should be empty in that space
         # check if those areas are empty in the right layers (so not the ego vehicle layer)
         return True
 
+    def safe_block(self, x, y):
+        if self.state[4, x, y] == 1:
+            return True
+        elif self.state[0, x, y] == 0:
+            return False
+        elif self.state[3, x, y] == 1:
+            return False
+        elif self.state[8, x, y] == 1:
+            return False
+        else:
+            return True
+
     def get_new_transform(self, action):
-        current_transform = self.vehicle.get_transform()
+        new_transform = self.vehicle.get_transform()
         acc_action = action % len(ACC_ACTIONS)
 
         if acc_action < 2:
@@ -214,10 +230,15 @@ class CarEnv:
 
         vel = self.vehicle.get_velocity()
 
-        x_angle = abs(math.cos(math.radians(current_transform.rotation.yaw)))
-        y_angle = abs(math.sin(math.radians(current_transform.rotation.yaw)))
+        x_angle = math.cos(math.radians(new_transform.rotation.yaw))
+        y_angle = math.sin(math.radians(new_transform.rotation.yaw))
 
-        current_transform.location.x = current_transform.location.x + ((vel.x + BUFFER_TIME * acc_action * x_angle * 0.5) * BUFFER_TIME)
-        current_transform.location.y = current_transform.location.y + ((vel.y + BUFFER_TIME * acc_action * y_angle * 0.5) * BUFFER_TIME)
+        x_dif = ((vel.x + BUFFER_TIME * acc_action * x_angle * 0.5) * BUFFER_TIME)
+        y_dif = ((vel.y + BUFFER_TIME * acc_action * y_angle * 0.5) * BUFFER_TIME)
 
-        return current_transform
+        return x_dif, y_dif
+
+    def get_safe_distance(self):
+        speed = self.speed/3.6
+
+        return (0.5 * speed**2) / BRAKE_POWER

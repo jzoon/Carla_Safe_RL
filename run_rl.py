@@ -31,8 +31,8 @@ if __name__ == "__main__":
             step += 1
             step_start = time.time()
             qs = model.predict(np.expand_dims(current_state, axis=0))[0]
-            if env.speed > 70:
-                action = 10#np.argmax(qs)
+            if env.speed > 60:
+                action = 11#np.argmax(qs)
 
 
             new_state, reward, done, _ = env.step(action)
