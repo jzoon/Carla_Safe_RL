@@ -89,7 +89,10 @@ if __name__ == '__main__':
             average_reward = sum(ep_rewards[-AGGREGATE_STATS_EVERY:]) / len(ep_rewards[-AGGREGATE_STATS_EVERY:])
             min_reward = min(ep_rewards[-AGGREGATE_STATS_EVERY:])
             max_reward = max(ep_rewards[-AGGREGATE_STATS_EVERY:])
-            avg_colissions_per_m = sum(colissions[-AGGREGATE_STATS_EVERY:])/sum(distances[-AGGREGATE_STATS_EVERY:])
+            if sum(distances[-AGGREGATE_STATS_EVERY:]) > 0:
+                avg_colissions_per_m = sum(colissions[-AGGREGATE_STATS_EVERY:])/sum(distances[-AGGREGATE_STATS_EVERY:])
+            else:
+                avg_colissions_per_m = sum(colissions[-AGGREGATE_STATS_EVERY:])
             avg_wrong_location = sum(wrong_locations[-AGGREGATE_STATS_EVERY:]) / len(wrong_locations[-AGGREGATE_STATS_EVERY:])
             avg_dest_distance = sum(dest_distances[-AGGREGATE_STATS_EVERY:]) / len(dest_distances[-AGGREGATE_STATS_EVERY:])
             avg_speed = sum(distances[-AGGREGATE_STATS_EVERY:])/sum(times[-AGGREGATE_STATS_EVERY:])
