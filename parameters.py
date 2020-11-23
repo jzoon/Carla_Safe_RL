@@ -37,3 +37,4 @@ DESTINATION_DISTANCE = 150
 # These are approximations
 BRAKE_POWER = 8
 ACC_POWER = 3
+BUFFER_TIME = 0.2

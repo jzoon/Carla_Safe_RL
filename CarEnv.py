@@ -208,8 +208,16 @@ class CarEnv:
         acc_action = action % len(ACC_ACTIONS)
 
         if acc_action < 2:
-            acc_action = acc_action * BRAKE_POWER
+            acc_action = ACC_ACTIONS[acc_action] * BRAKE_POWER
         elif acc_action > 2:
-            acc_action = acc_action * ACC_POWER
+            acc_action = ACC_ACTIONS[acc_action] * ACC_POWER
 
-        
+        vel = self.vehicle.get_velocity()
+
+        x_angle = abs(math.cos(math.radians(current_transform.rotation.yaw)))
+        y_angle = abs(math.sin(math.radians(current_transform.rotation.yaw)))
+
+        current_transform.location.x = current_transform.location.x + ((vel.x + BUFFER_TIME * acc_action * x_angle * 0.5) * BUFFER_TIME)
+        current_transform.location.y = current_transform.location.y + ((vel.y + BUFFER_TIME * acc_action * y_angle * 0.5) * BUFFER_TIME)
+
+        return current_transform
