@@ -5,7 +5,6 @@ import time
 import sys
 import glob
 import os
-import numpy as np
 import matplotlib.pyplot as plt
 
 try:
@@ -24,8 +23,17 @@ class CarEnv:
     actor_list = []
     collision_hist = []
     lane_hist = []
-
+    distance = 0
+    wrong_steps = 0
+    previous_location = None
     speed = 0
+    colsensor = None
+    lanesensor = None
+    episode_start = 0
+    state = None
+    location = None
+    previous_distance_to_destination = 0
+    transform = None
 
     def __init__(self):
         self.client = carla.Client('localhost', 2000)
@@ -42,6 +50,7 @@ class CarEnv:
         self.blueprint_library = self.world.get_blueprint_library()
         self.model_3 = self.blueprint_library.filter('model3')[0]
 
+        self.start_transform = self.world.get_map().get_spawn_points()[2]
         self.destination = self.world.get_map().get_spawn_points()[2]
         self.destination.location.x -= DESTINATION_DISTANCE
 
@@ -55,7 +64,6 @@ class CarEnv:
         if OTHER_TRAFFIC:
             spawn_npc.main()
 
-
     def reset(self):
         self.distance = 0
         self.wrong_steps = 0
@@ -66,26 +74,26 @@ class CarEnv:
         self.lane_hist = []
 
         self.vehicle = None
-        self.transform = self.world.get_map().get_spawn_points()[2]
 
         while self.vehicle is None:
-            self.vehicle = self.world.try_spawn_actor(self.model_3, self.transform)
-        self.actor_list.append(self.vehicle)
+            self.vehicle = self.world.try_spawn_actor(self.model_3, self.start_transform)
 
-        transform = carla.Transform(carla.Location(x=2.5, z=0.7))
+        self.actor_list.append(self.vehicle)
         self.vehicle.apply_control(carla.VehicleControl(throttle=0.0, brake=0.0))
 
+        sensor_transform = carla.Transform(carla.Location(x=2.5, z=0.7))
+
         colsensor = self.blueprint_library.find('sensor.other.collision')
-        self.colsensor = self.world.spawn_actor(colsensor, transform, attach_to=self.vehicle)
+        self.colsensor = self.world.spawn_actor(colsensor, sensor_transform, attach_to=self.vehicle)
         self.actor_list.append(self.colsensor)
         self.colsensor.listen(lambda event: self.collision_hist.append(event))
 
         lanesensor = self.blueprint_library.find('sensor.other.lane_invasion')
-        self.lanesensor = self.world.spawn_actor(lanesensor, transform, attach_to=self.vehicle)
+        self.lanesensor = self.world.spawn_actor(lanesensor, sensor_transform, attach_to=self.vehicle)
         self.actor_list.append(self.lanesensor)
         self.lanesensor.listen(lambda event: self.lane_hist.append(event))
 
-        self.previous_distance_to_destination = self.calculate_distance(self.destination.location.x, self.transform.location.x, self.destination.location.y, self.transform.location.y)
+        self.previous_distance_to_destination = self.calculate_distance(self.destination.location.x, self.start_transform.location.x, self.destination.location.y, self.start_transform.location.y)
 
         self.birdview_producer.produce(agent_vehicle=self.vehicle)
         self.episode_start = time.time()
@@ -93,32 +101,33 @@ class CarEnv:
         return self.get_state()
 
     def step(self, action):
-        self.state = self.get_state()
         self.car_control(action)
-
-        done = False
-        current_location = self.vehicle.get_location()
-        self.update_KPIs(current_location)
+        self.state = self.get_state()
+        self.transform = self.vehicle.get_transform()
+        self.location = self.vehicle.get_location()
+        self.update_KPIs(self.location)
         v = self.vehicle.get_velocity()
-        kmh = int(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2))
-        self.speed = kmh
+        self.speed = int(math.sqrt(v.x**2 + v.y**2 + v.z**2))
 
+        reward, done = self.get_reward_and_done()
+
+        return self.state, reward, done, None
+
+    def get_reward_and_done(self):
         reward = 0
+        done = False
 
         if self.wrong_location() != 0:
             reward -= 10
 
-        reward += int(kmh/5)
+        reward += int(self.speed / 2)
 
-        reward -= len(self.lane_hist)*10
+        reward -= len(self.lane_hist) * 10
         self.lane_hist = []
 
-        if len(self.collision_hist) != 0:
-            done = True
-            reward = -200
-
-        dist_to_dest = self.calculate_distance(current_location.x, self.destination.location.x, current_location.y, self.destination.location.y)
-        if self.passed_destination(current_location, self.previous_location):
+        dist_to_dest = self.calculate_distance(self.location.x, self.destination.location.x, self.location.y,
+                                               self.destination.location.y)
+        if self.passed_destination(self.location, self.previous_location):
             reward = 200
             done = True
             self.previous_distance_to_destination = 0
@@ -126,12 +135,14 @@ class CarEnv:
             reward += 2 * (self.previous_distance_to_destination - dist_to_dest)
             self.previous_distance_to_destination = dist_to_dest
 
+        if len(self.collision_hist) != 0:
+            done = True
+            reward = -200
+
         if self.episode_start + SECONDS_PER_EPISODE < time.time():
             done = True
 
-        self.previous_location = current_location
-
-        return self.state, reward, done, None
+        return reward, done
 
     def car_control(self, action):
         steer_action = int(action / len(STEER_ACTIONS))
@@ -147,7 +158,7 @@ class CarEnv:
             )
 
     def update_KPIs(self, current_location):
-        if self.previous_location == None:
+        if self.previous_location is None:
             self.previous_location = current_location
         else:
             self.distance += self.calculate_distance(current_location.x, self.previous_location.x, current_location.y, self.previous_location.y)
@@ -156,12 +167,11 @@ class CarEnv:
             self.wrong_steps += 1
 
     def wrong_location(self):
-        dif = abs(abs(self.vehicle.get_transform().rotation.yaw) - self.world.get_map().get_waypoint(
-            self.vehicle.get_location()).transform.rotation.yaw)
+        dif = abs(abs(self.transform.rotation.yaw) - self.world.get_map().get_waypoint(self.location).transform.rotation.yaw)
 
         if 90 <= dif <= 270:
             return 1
-        elif self.world.get_map().get_waypoint(self.vehicle.get_location(), project_to_road=False,
+        elif self.world.get_map().get_waypoint(self.location, project_to_road=False,
                                                lane_type=carla.LaneType.Sidewalk) is not None:
             return 2
 
@@ -199,28 +209,70 @@ class CarEnv:
         return -1
 
     def is_safe(self, action):
-        x_dif, y_dif = self.get_new_transform(action)
+        x_dif, y_dif, relative_angle = self.get_new_transform(action)
+        new_x = (WIDTH/2) + x_dif
+        new_y = (HEIGHT/2) - y_dif
 
-        # get state
-        # transform state to new car position after 0.5 seconds
-        # check area which should be empty in that space
-        # check if those areas are empty in the right layers (so not the ego vehicle layer)
+        return self.check_safe_trajectory(int(new_x), int(new_y), relative_angle)
+
+    def check_safe_trajectory(self, x, y, angle):
+        distance = self.get_safe_distance_blocks()
+
+        x_angle = math.sin(math.radians(angle))
+        y_angle = math.cos(math.radians(angle))
+
+        current_distance = 0
+
+        if abs(x - WIDTH/2) < 12 and abs(y - HEIGHT/2) < 12:
+            current_distance = 12
+
+        rgb = BirdViewProducer.as_rgb(self.state.transpose([2,1,0]))
+
+        while current_distance < distance * PIXELS_PER_METER:
+            block1 = self.dangerous_block(x + math.floor(x_angle*current_distance), y - math.floor(y_angle*current_distance))
+            block2 = self.dangerous_block(x + math.floor(x_angle*current_distance), y - math.ceil(y_angle*current_distance))
+            block3 = self.dangerous_block(x + math.ceil(x_angle * current_distance), y - math.floor(y_angle * current_distance))
+            block4 = self.dangerous_block(x + math.ceil(x_angle * current_distance), y - math.ceil(y_angle * current_distance))
+
+            rgb[y - math.floor(y_angle*current_distance), x + math.floor(x_angle*current_distance)] = [0,0,0]
+            rgb[y - math.ceil(y_angle * current_distance), x + math.floor(x_angle * current_distance)] = [0, 0, 0]
+            rgb[y - math.floor(y_angle * current_distance), x + math.ceil(x_angle * current_distance)] = [0, 0, 0]
+            rgb[y - math.ceil(y_angle * current_distance), x + math.ceil(x_angle * current_distance)] = [0, 0, 0]
+
+            if block1 or block2 or block3 or block4:
+                plt.imshow(rgb)
+                plt.show()
+                return False
+
+            current_distance += 1
+
+        plt.imshow(rgb)
+        plt.show()
+
         return True
 
-    def safe_block(self, x, y):
-        if self.state[4, x, y] == 1:
+    def dangerous_block(self, x, y):
+        if x < 0 or x > WIDTH or y < 0 or y > HEIGHT:
+            #print("Out of state")
+            return False
+
+        if self.state[x, y, 4] == 1:
+            #print("Safe: own car")
+            return False
+        elif self.state[x, y, 0] == 0:
+            print("Unsafe: no road")
             return True
-        elif self.state[0, x, y] == 0:
-            return False
-        elif self.state[3, x, y] == 1:
-            return False
-        elif self.state[8, x, y] == 1:
-            return False
+        elif self.state[x, y, 3] == 1:
+            print("Unsafe: car")
+            return True
+        elif self.state[x, y, 8] == 1:
+            print("Unsafe: pedestrian")
+            return True
         else:
-            return True
+            #print("Safe")
+            return False
 
     def get_new_transform(self, action):
-        new_transform = self.vehicle.get_transform()
         acc_action = action % len(ACC_ACTIONS)
 
         if acc_action < 2:
@@ -228,17 +280,10 @@ class CarEnv:
         elif acc_action > 2:
             acc_action = ACC_ACTIONS[acc_action] * ACC_POWER
 
-        vel = self.vehicle.get_velocity()
+        x_dif = 0
+        y_dif = int(((self.speed + BUFFER_TIME * acc_action * 0.5) * BUFFER_TIME) * PIXELS_PER_METER)
 
-        x_angle = math.cos(math.radians(new_transform.rotation.yaw))
-        y_angle = math.sin(math.radians(new_transform.rotation.yaw))
+        return x_dif, y_dif, 0
 
-        x_dif = ((vel.x + BUFFER_TIME * acc_action * x_angle * 0.5) * BUFFER_TIME)
-        y_dif = ((vel.y + BUFFER_TIME * acc_action * y_angle * 0.5) * BUFFER_TIME)
-
-        return x_dif, y_dif
-
-    def get_safe_distance(self):
-        speed = self.speed/3.6
-
-        return (0.5 * speed**2) / BRAKE_POWER
+    def get_safe_distance_blocks(self):
+        return (0.5 * self.speed**2) / BRAKE_POWER
