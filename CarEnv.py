@@ -97,10 +97,17 @@ class CarEnv:
 
         self.birdview_producer.produce(agent_vehicle=self.vehicle)
         self.episode_start = time.time()
+        self.state = self.get_state()
+        self.location = self.vehicle.get_location()
+        self.transform = self.vehicle.get_transform()
 
-        return self.get_state()
+        return self.state
 
-    def step(self, action):
+    def step(self, action_list):
+        if SHIELD:
+            action = self.shield(action_list)
+        else:
+            action = action_list[0]
         self.car_control(action)
         self.state = self.get_state()
         self.transform = self.vehicle.get_transform()
@@ -109,13 +116,16 @@ class CarEnv:
         v = self.vehicle.get_velocity()
         self.speed = int(math.sqrt(v.x**2 + v.y**2 + v.z**2))
 
-        reward, done = self.get_reward_and_done()
+        reward, done = self.get_reward_and_done(action, action_list)
 
         return self.state, reward, done, None
 
-    def get_reward_and_done(self):
+    def get_reward_and_done(self, action, action_list):
         reward = 0
         done = False
+
+        if action != action_list[0]:
+            reward -= 50
 
         if self.wrong_location() != 0:
             reward -= 10
@@ -145,7 +155,7 @@ class CarEnv:
         return reward, done
 
     def car_control(self, action):
-        steer_action = int(action / len(STEER_ACTIONS))
+        steer_action = int(action / len(ACC_ACTIONS))
         acc_action = action % len(ACC_ACTIONS)
 
         if ACC_ACTIONS[acc_action] < 0:
@@ -206,7 +216,7 @@ class CarEnv:
                 return action
 
         print("No safe action found. RIP")
-        return -1
+        return sorted_actions[1]
 
     def is_safe(self, action):
         x_dif, y_dif, relative_angle = self.get_new_transform(action)
@@ -226,28 +236,16 @@ class CarEnv:
         if abs(x - WIDTH/2) < 12 and abs(y - HEIGHT/2) < 12:
             current_distance = 12
 
-        rgb = BirdViewProducer.as_rgb(self.state.transpose([2,1,0]))
-
         while current_distance < distance * PIXELS_PER_METER:
             block1 = self.dangerous_block(x + math.floor(x_angle*current_distance), y - math.floor(y_angle*current_distance))
             block2 = self.dangerous_block(x + math.floor(x_angle*current_distance), y - math.ceil(y_angle*current_distance))
             block3 = self.dangerous_block(x + math.ceil(x_angle * current_distance), y - math.floor(y_angle * current_distance))
             block4 = self.dangerous_block(x + math.ceil(x_angle * current_distance), y - math.ceil(y_angle * current_distance))
 
-            rgb[y - math.floor(y_angle*current_distance), x + math.floor(x_angle*current_distance)] = [0,0,0]
-            rgb[y - math.ceil(y_angle * current_distance), x + math.floor(x_angle * current_distance)] = [0, 0, 0]
-            rgb[y - math.floor(y_angle * current_distance), x + math.ceil(x_angle * current_distance)] = [0, 0, 0]
-            rgb[y - math.ceil(y_angle * current_distance), x + math.ceil(x_angle * current_distance)] = [0, 0, 0]
-
             if block1 or block2 or block3 or block4:
-                plt.imshow(rgb)
-                plt.show()
                 return False
 
             current_distance += 1
-
-        plt.imshow(rgb)
-        plt.show()
 
         return True
 
@@ -260,13 +258,13 @@ class CarEnv:
             #print("Safe: own car")
             return False
         elif self.state[x, y, 0] == 0:
-            print("Unsafe: no road")
+            #print("Unsafe: no road")
             return True
         elif self.state[x, y, 3] == 1:
-            print("Unsafe: car")
+            #print("Unsafe: car")
             return True
         elif self.state[x, y, 8] == 1:
-            print("Unsafe: pedestrian")
+            #print("Unsafe: pedestrian")
             return True
         else:
             #print("Safe")

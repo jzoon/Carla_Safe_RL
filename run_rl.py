@@ -11,8 +11,8 @@ from CarEnv import *
 MODEL_PATH = "models/far_dest___501.03max__288.95avg_-301.25min__1605733944.model"
 
 if __name__ == "__main__":
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
-    backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
+    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
+    #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
 
     model = load_model(MODEL_PATH)
     env = CarEnv()
@@ -26,16 +26,12 @@ if __name__ == "__main__":
         env.collision_hist = []
         step = 0
         start_time = time.time()
-        action = 14
 
-        new_state, reward, done, _ = env.step(action)
         while True:
             step += 1
             step_start = time.time()
             qs = model.predict(np.expand_dims(current_state, axis=0))[0]
-            if not env.is_safe(14):
-                action = 10#np.argmax(qs)
-
+            action = np.argmax(qs)
 
             new_state, reward, done, _ = env.step(action)
             current_state = new_state
@@ -45,7 +41,7 @@ if __name__ == "__main__":
 
             frame_time = time.time() - step_start
             fps_counter.append(frame_time)
-            #print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
+            print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
 
             print()
 

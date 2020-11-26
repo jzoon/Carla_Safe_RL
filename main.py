@@ -11,10 +11,8 @@ from tqdm import tqdm
 
 
 def pick_random_action():
-    steering_probabilities = [0.1, 0.2, 0.4, 0.2, 0.1]
-    acc_probabilities = [0.05, 0.1, 0.15, 0.4, 0.4]
-    steer_draw = random.choices(range(len(STEER_ACTIONS)), weights=steering_probabilities)[0]
-    acc_draw = random.choices(range(len(ACC_ACTIONS)), weights=acc_probabilities)[0]
+    steer_draw = random.choices(range(len(STEER_ACTIONS)), weights=STEER_PROBABILITIES)[0]
+    acc_draw = random.choices(range(len(ACC_ACTIONS)), weights=ACC_PROBABILITIES)[0]
 
     return 5 * steer_draw + acc_draw
 
@@ -57,21 +55,23 @@ if __name__ == '__main__':
             current_time = time.time()
 
             if np.random.random() > epsilon:
-                action = np.argmax(agent.get_qs(np.expand_dims(current_state, axis=0)))
+                action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))
             else:
+                action_list = list(range(len(ACC_ACTIONS) * len(STEER_ACTIONS)))
+                random.shuffle(action_list)
                 if env.speed < 0.7*env.get_speed_limit():
                     action = pick_random_action()
-                else:
-                    action = random.choice(range(len(ACC_ACTIONS)*len(STEER_ACTIONS)))
+                    index = action_list.index(action)
+                    action_list[index] = action_list[0]
+                    action_list[0] = action
 
             time_spent = time.time() - current_time
             if time_spent < 1/FPS:
                 time.sleep(1/FPS - time_spent)
-
-            new_state, reward, done, _ = env.step(action)
+            new_state, reward, done, chosen_action = env.step(action_list)
             episode_reward += reward
 
-            agent.update_replay_memory((current_state, action, reward, new_state, done))
+            agent.update_replay_memory((current_state, chosen_action, reward, new_state, done))
             current_state = new_state
             step += 1
 
