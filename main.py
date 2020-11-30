@@ -50,6 +50,7 @@ if __name__ == '__main__':
         current_state = env.reset()
         done = False
         episode_start = time.time()
+        previous_time = time.time()
 
         while not done:
             current_time = time.time()
@@ -59,15 +60,17 @@ if __name__ == '__main__':
             else:
                 action_list = list(range(len(ACC_ACTIONS) * len(STEER_ACTIONS)))
                 random.shuffle(action_list)
-                if env.speed < 0.7*env.get_speed_limit():
+                if env.speed < SPEED_LIMIT_EXPLORATION*env.get_speed_limit():
                     action = pick_random_action()
                     index = action_list.index(action)
                     action_list[index] = action_list[0]
                     action_list[0] = action
 
-            time_spent = time.time() - current_time
+            time_spent = time.time() - previous_time
             if time_spent < 1/FPS:
                 time.sleep(1/FPS - time_spent)
+                previous_time = time.time()
+
             new_state, reward, done, chosen_action = env.step(action_list)
             episode_reward += reward
 

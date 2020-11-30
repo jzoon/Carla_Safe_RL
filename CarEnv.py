@@ -6,6 +6,7 @@ import sys
 import glob
 import os
 import matplotlib.pyplot as plt
+from PredictNewStateModel import predict_new_state
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -41,6 +42,7 @@ class CarEnv:
 
         self.world = self.client.load_world('Town01')
         self.world.set_weather(carla.WeatherParameters.ClearSunset)
+        self.map = self.world.get_map()
 
         if not RENDERING:
             settings = self.world.get_settings()
@@ -108,15 +110,37 @@ class CarEnv:
             action = self.shield(action_list)
         else:
             action = action_list[0]
-        self.car_control(action)
-        self.state = self.get_state()
-        self.transform = self.vehicle.get_transform()
-        self.location = self.vehicle.get_location()
-        self.update_KPIs(self.location)
-        v = self.vehicle.get_velocity()
-        self.speed = int(math.sqrt(v.x**2 + v.y**2 + v.z**2))
 
+        #w_location = self.vehicle.get_location()
+        #w_acc = -self.vehicle.get_acceleration().x
+        #w_speed = -self.vehicle.get_velocity().x
+
+        #p_distance, p_speed, p_acc = predict_new_state(w_speed, w_acc, action, 2)
+        #temp_time = time.time()
+
+        self.car_control(action)
+        time.sleep(ACTION_TO_STATE_TIME)
+        self.state = self.get_state()
+
+        self.transform = self.vehicle.get_transform()
+        self.location = self.transform.location
+        v = self.vehicle.get_velocity()
+        self.speed = int(math.sqrt(v.x ** 2 + v.y ** 2 + v.z ** 2))
+        self.update_KPIs(self.location)
         reward, done = self.get_reward_and_done(action, action_list)
+
+        #time.sleep(2 - (time.time() - temp_time))
+        #new_loc = self.vehicle.get_location()
+        #driven = self.calculate_distance(new_loc.x, w_location.x, new_loc.y, w_location.y)
+        #distance_dif = p_distance - driven
+        #new_vel = -self.vehicle.get_velocity().x
+        #speed_dif = p_speed - new_vel
+        #new_acc = -self.vehicle.get_acceleration().x
+        #acc_dif = p_acc - new_acc
+
+        #with open("plots/" + str(action) + ".csv", "a") as file:
+            #write_str = str(distance_dif) + ',' + str(speed_dif) + "," + str(acc_dif) + '\n'
+            #file.write(write_str)
 
         return self.state, reward, done, None
 
@@ -177,11 +201,11 @@ class CarEnv:
             self.wrong_steps += 1
 
     def wrong_location(self):
-        dif = abs(abs(self.transform.rotation.yaw) - self.world.get_map().get_waypoint(self.location).transform.rotation.yaw)
+        dif = abs(abs(self.transform.rotation.yaw) - self.map.get_waypoint(self.location).transform.rotation.yaw)
 
         if 90 <= dif <= 270:
             return 1
-        elif self.world.get_map().get_waypoint(self.location, project_to_road=False,
+        elif self.map.get_waypoint(self.location, project_to_road=False,
                                                lane_type=carla.LaneType.Sidewalk) is not None:
             return 2
 
