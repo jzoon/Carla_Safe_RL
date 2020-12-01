@@ -80,6 +80,11 @@ class CarEnv:
         while self.vehicle is None:
             self.vehicle = self.world.try_spawn_actor(self.model_3, self.start_transform)
 
+        self.start_transform.location.x -= 50
+        asfd = self.world.spawn_actor(self.model_3, self.start_transform)
+        self.start_transform.location.x += 50
+        self.actor_list.append(asfd)
+
         self.actor_list.append(self.vehicle)
         self.vehicle.apply_control(carla.VehicleControl(throttle=0.0, brake=0.0))
 
@@ -106,6 +111,14 @@ class CarEnv:
         return self.state
 
     def step(self, action_list):
+        self.state = self.get_state()
+        self.transform = self.vehicle.get_transform()
+        self.location = self.transform.location
+        v = self.vehicle.get_velocity()
+        self.speed = int(math.sqrt(v.x ** 2 + v.y ** 2 + v.z ** 2))
+        a = self.vehicle.get_acceleration()
+        self.acceleration = int(math.sqrt(a.x ** 2 + a.y ** 2 + a.z ** 2))
+
         if SHIELD:
             action = self.shield(action_list)
         else:
@@ -120,8 +133,8 @@ class CarEnv:
 
         self.car_control(action)
         time.sleep(ACTION_TO_STATE_TIME)
-        self.state = self.get_state()
 
+        self.state = self.get_state()
         self.transform = self.vehicle.get_transform()
         self.location = self.transform.location
         v = self.vehicle.get_velocity()
@@ -238,35 +251,46 @@ class CarEnv:
         for action in sorted_actions:
             if self.is_safe(action):
                 return action
+            else:
+                print(str(action) + " is not safe!")
 
         print("No safe action found. RIP")
-        return sorted_actions[1]
+        return 0
 
     def is_safe(self, action):
-        x_dif, y_dif, relative_angle = self.get_new_transform(action)
-        new_x = (WIDTH/2) + x_dif
-        new_y = (HEIGHT/2) - y_dif
+        distance, new_speed, _ = predict_new_state(self.speed, self.acceleration, action, BUFFER_TIME)
+        new_x = (WIDTH/2)
+        new_y = (HEIGHT/2) - int(distance*PIXELS_PER_METER)
 
-        return self.check_safe_trajectory(int(new_x), int(new_y), relative_angle)
+        return self.check_safe_trajectory(int(new_x), int(new_y), new_speed, 0)
 
-    def check_safe_trajectory(self, x, y, angle):
-        distance = self.get_safe_distance_blocks()
+    def check_safe_trajectory(self, x, y, new_speed, angle):
+        distance = self.get_safe_distance_blocks(new_speed)
 
         x_angle = math.sin(math.radians(angle))
         y_angle = math.cos(math.radians(angle))
 
         current_distance = 0
 
-        if abs(x - WIDTH/2) < 12 and abs(y - HEIGHT/2) < 12:
-            current_distance = 12
+        #if abs(x - WIDTH/2) < 8 and abs(y - HEIGHT/2) < 8:
+        #    current_distance = 8
 
-        while current_distance < distance * PIXELS_PER_METER:
+        rgb = BirdViewProducer.as_rgb(self.state.transpose([2, 1, 0]))
+
+        while current_distance < distance:
             block1 = self.dangerous_block(x + math.floor(x_angle*current_distance), y - math.floor(y_angle*current_distance))
             block2 = self.dangerous_block(x + math.floor(x_angle*current_distance), y - math.ceil(y_angle*current_distance))
             block3 = self.dangerous_block(x + math.ceil(x_angle * current_distance), y - math.floor(y_angle * current_distance))
             block4 = self.dangerous_block(x + math.ceil(x_angle * current_distance), y - math.ceil(y_angle * current_distance))
 
+            rgb[y - math.floor(y_angle * current_distance), x + math.floor(x_angle * current_distance)] = [0, 0, 0]
+            rgb[y - math.ceil(y_angle * current_distance), x + math.floor(x_angle * current_distance)] = [0, 0, 0]
+            rgb[y - math.floor(y_angle * current_distance), x + math.ceil(x_angle * current_distance)] = [0, 0, 0]
+            rgb[y - math.ceil(y_angle * current_distance), x + math.ceil(x_angle * current_distance)] = [0, 0, 0]
+
             if block1 or block2 or block3 or block4:
+                plt.imshow(rgb)
+                plt.show()
                 return False
 
             current_distance += 1
@@ -294,18 +318,11 @@ class CarEnv:
             #print("Safe")
             return False
 
-    def get_new_transform(self, action):
-        acc_action = action % len(ACC_ACTIONS)
+    def get_safe_distance_blocks(self, speed):
+        meters = 0
 
-        if acc_action < 2:
-            acc_action = ACC_ACTIONS[acc_action] * BRAKE_POWER
-        elif acc_action > 2:
-            acc_action = ACC_ACTIONS[acc_action] * ACC_POWER
+        while speed > 0.1:
+            dist, speed, _ = predict_new_state(speed, 0, 0, 0.1)
+            meters += dist
 
-        x_dif = 0
-        y_dif = int(((self.speed + BUFFER_TIME * acc_action * 0.5) * BUFFER_TIME) * PIXELS_PER_METER)
-
-        return x_dif, y_dif, 0
-
-    def get_safe_distance_blocks(self):
-        return (0.5 * self.speed**2) / BRAKE_POWER
+        return int(meters*PIXELS_PER_METER + BUFFER_DISTANCE*PIXELS_PER_METER)

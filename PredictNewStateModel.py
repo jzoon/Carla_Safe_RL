@@ -24,3 +24,4 @@ def predict_new_state(current_speed, current_acc, action, time):
         new_speed = current_speed + time * ((1.041*current_speed + 2.532) - current_speed)
         new_acc = current_acc + time * ( - 0.8969*current_acc + 3.826)
         return distance, new_speed, new_acc
+

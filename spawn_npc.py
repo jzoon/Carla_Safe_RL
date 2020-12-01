@@ -12,6 +12,7 @@ import glob
 import os
 import sys
 import time
+from parameters import *
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -47,7 +48,7 @@ def main():
     argparser.add_argument(
         '-n', '--number-of-vehicles',
         metavar='N',
-        default=80,
+        default=AMOUNT_OF_VEHICLES,
         type=int,
         help='number of vehicles (default: 10)')
     argparser.add_argument(
