@@ -11,10 +11,8 @@ from tqdm import tqdm
 
 
 def pick_random_action():
-    steering_probabilities = [0.1, 0.2, 0.4, 0.2, 0.1]
-    acc_probabilities = [0.05, 0.1, 0.15, 0.4, 0.4]
-    steer_draw = random.choices(range(len(STEER_ACTIONS)), weights=steering_probabilities)[0]
-    acc_draw = random.choices(range(len(ACC_ACTIONS)), weights=acc_probabilities)[0]
+    steer_draw = random.choices(range(len(STEER_ACTIONS)), weights=STEER_PROBABILITIES)[0]
+    acc_draw = random.choices(range(len(ACC_ACTIONS)), weights=ACC_PROBABILITIES)[0]
 
     return 5 * steer_draw + acc_draw
 
@@ -52,26 +50,31 @@ if __name__ == '__main__':
         current_state = env.reset()
         done = False
         episode_start = time.time()
+        previous_time = time.time()
 
         while not done:
             current_time = time.time()
 
             if np.random.random() > epsilon:
-                action = np.argmax(agent.get_qs(np.expand_dims(current_state, axis=0)))
+                action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))
             else:
-                if env.speed < 0.7*env.get_speed_limit():
+                action_list = list(range(len(ACC_ACTIONS) * len(STEER_ACTIONS)))
+                random.shuffle(action_list)
+                if env.speed < SPEED_LIMIT_EXPLORATION*env.get_speed_limit():
                     action = pick_random_action()
-                else:
-                    action = random.choice(range(len(ACC_ACTIONS)*len(STEER_ACTIONS)))
+                    index = action_list.index(action)
+                    action_list[index] = action_list[0]
+                    action_list[0] = action
 
-            time_spent = time.time() - current_time
+            time_spent = time.time() - previous_time
             if time_spent < 1/FPS:
                 time.sleep(1/FPS - time_spent)
+                previous_time = time.time()
 
-            new_state, reward, done, _ = env.step(action)
+            new_state, reward, done, chosen_action = env.step(action_list)
             episode_reward += reward
 
-            agent.update_replay_memory((current_state, action, reward, new_state, done))
+            agent.update_replay_memory((current_state, chosen_action, reward, new_state, done))
             current_state = new_state
             step += 1
 
@@ -105,7 +108,8 @@ if __name__ == '__main__':
             # Save model, but only when min reward is greater or equal a set value
             #if episode % int(EPISODES/10) == 0:
             #    agent.model.save(
-            #        f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
+            #        f'temp_models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
+
 
         if epsilon > MIN_EPSILON:
             epsilon *= EPSILON_DECAY
@@ -114,4 +118,3 @@ if __name__ == '__main__':
     agent.terminate = True
     trainer_thread.join()
     agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
-

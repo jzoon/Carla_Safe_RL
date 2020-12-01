@@ -11,8 +11,8 @@ from CarEnv import *
 MODEL_PATH = "models/far_dest___501.03max__288.95avg_-301.25min__1605733944.model"
 
 if __name__ == "__main__":
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
-    backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
+    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
+    #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
 
     model = load_model(MODEL_PATH)
     env = CarEnv()
@@ -42,6 +42,8 @@ if __name__ == "__main__":
             frame_time = time.time() - step_start
             fps_counter.append(frame_time)
             print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
+
+            print()
 
         print()
         print("Colissions per m: " + str(int(env.get_KPI()[1]/env.get_KPI()[0])))
