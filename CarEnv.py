@@ -28,6 +28,7 @@ class CarEnv:
     wrong_steps = 0
     previous_location = None
     speed = 0
+    acceleration = 0
     colsensor = None
     lanesensor = None
     episode_start = 0
@@ -100,7 +101,7 @@ class CarEnv:
         self.actor_list.append(self.lanesensor)
         self.lanesensor.listen(lambda event: self.lane_hist.append(event))
 
-        self.previous_distance_to_destination = self.calculate_distance(self.destination.location.x, self.start_transform.location.x, self.destination.location.y, self.start_transform.location.y)
+        self.previous_distance_to_destination = self.calculate_distance(self.destination.location, self.start_transform.location)
 
         self.birdview_producer.produce(agent_vehicle=self.vehicle)
         self.episode_start = time.time()
@@ -161,19 +162,20 @@ class CarEnv:
         reward = 0
         done = False
 
-        if action != action_list[0]:
-            reward -= 50
+        if SHIELD:
+            if action != action_list[0]:
+                reward -= 20
+        else:
+            if self.wrong_location() != 0:
+                reward -= 10
 
-        if self.wrong_location() != 0:
-            reward -= 10
+            reward -= len(self.lane_hist) * 10
+
+        self.lane_hist = []
 
         reward += int(self.speed / 2)
 
-        reward -= len(self.lane_hist) * 10
-        self.lane_hist = []
-
-        dist_to_dest = self.calculate_distance(self.location.x, self.destination.location.x, self.location.y,
-                                               self.destination.location.y)
+        dist_to_dest = self.calculate_distance(self.location, self.destination.location)
         if self.passed_destination(self.location, self.previous_location):
             reward = 200
             done = True
@@ -208,7 +210,7 @@ class CarEnv:
         if self.previous_location is None:
             self.previous_location = current_location
         else:
-            self.distance += self.calculate_distance(current_location.x, self.previous_location.x, current_location.y, self.previous_location.y)
+            self.distance += self.calculate_distance(current_location, self.previous_location)
 
         if self.wrong_location() > 0:
             self.wrong_steps += 1
@@ -241,11 +243,8 @@ class CarEnv:
     def get_KPI(self):
         return self.distance, len(self.collision_hist) > 0, self.wrong_steps, self.previous_distance_to_destination
 
-    def get_speed_limit(self):
-        return self.vehicle.get_speed_limit()*3.6
-
-    def calculate_distance(self, x1, x2, y1, y2):
-        return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+    def calculate_distance(self, location_a, location_b):
+        return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)
 
     def shield(self, sorted_actions):
         for action in sorted_actions:
