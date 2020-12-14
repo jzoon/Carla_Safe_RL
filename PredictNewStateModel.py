@@ -1,4 +1,7 @@
 def predict_new_state(current_speed, action, time):
+    if abs(current_speed) > 60:
+        print("Extremely high speed, no prediction possible")
+        return 0, 0
     if action == 0:
         new_speed = current_speed + time * ((0.0304 * current_speed**2 + 0.03968 * current_speed - 0.1725) - current_speed)
         distance = time * (current_speed + new_speed)/2

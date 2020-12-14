@@ -82,10 +82,10 @@ class CarEnv:
         while self.vehicle is None:
             self.vehicle = self.world.try_spawn_actor(self.model_3, self.start_transform)
 
-        self.start_transform.location.x -= 50
-        asfd = self.world.spawn_actor(self.model_3, self.start_transform)
-        self.start_transform.location.x += 50
-        self.actor_list.append(asfd)
+        #self.start_transform.location.x -= 50
+        #asfd = self.world.spawn_actor(self.model_3, self.start_transform)
+        #self.start_transform.location.x += 50
+        #self.actor_list.append(asfd)
 
         self.actor_list.append(self.vehicle)
         self.vehicle.apply_control(carla.VehicleControl(throttle=0.0, brake=0.0))
@@ -126,12 +126,12 @@ class CarEnv:
         else:
             action = action_list[0]
 
-        #temp_time = time.time()
-        #w_location = self.vehicle.get_location()
+        temp_time = time.time()
+        w_location = self.vehicle.get_location()
         #w_acc = -self.vehicle.get_acceleration().x
-        #w_speed = -self.vehicle.get_velocity().x
+        w_speed = -self.vehicle.get_velocity().x
 
-        #p_distance_1, p_distance_2, p_speed = predict_new_state(w_speed, action, 2)
+        p_distance, p_speed = predict_new_state(w_speed, action, 0.5)
 
         self.car_control(action)
         time.sleep(ACTION_TO_STATE_TIME)
@@ -144,17 +144,17 @@ class CarEnv:
         self.update_KPIs(self.location)
         reward, done = self.get_reward_and_done(action, action_list)
 
-        #time.sleep(2 - (time.time() - temp_time))
-        #new_loc = self.vehicle.get_location()
-        #driven = self.calculate_distance(new_loc, w_location)
-        #distance_dif_1 = p_distance_1 - driven
-        #distance_dif_2 = p_distance_2 - driven
-        #new_vel = -self.vehicle.get_velocity().x
-        #speed_dif = p_speed - new_vel
+        time.sleep(0.5 - (time.time() - temp_time))
+        new_loc = self.vehicle.get_location()
+        driven = self.calculate_distance(new_loc, w_location)
+        distance_dif = p_distance - driven
+        new_vel = -self.vehicle.get_velocity().x
+        speed_dif = p_speed - new_vel
 
-        #with open("difplots/" + str(action) + ".csv", "a") as file:
-        #    write_str = str(speed_dif) + ',' + str(distance_dif_1) + "," + str(distance_dif_2) + '\n'
-        #    file.write(write_str)
+        with open("difplots/" + str(action) + ".csv", "a") as file:
+            if w_speed > 0.5:
+                write_str = str(speed_dif) + ',' + str(distance_dif) + '\n'
+                file.write(write_str)
 
         return self.state, reward, done, None
 
@@ -288,11 +288,12 @@ class CarEnv:
             rgb[y - math.ceil(y_angle * current_distance), x + math.ceil(x_angle * current_distance)] = [0, 0, 0]
 
             if block1 or block2 or block3 or block4:
-                #plt.imshow(rgb)
-                #plt.show()
                 return False
 
             current_distance += 1
+
+        #plt.imshow(rgb)
+        #plt.show()
 
         return True
 

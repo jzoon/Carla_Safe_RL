@@ -10,21 +10,16 @@ my_data3 = genfromtxt("difplots/3.csv", delimiter=',')
 my_data4 = genfromtxt("difplots/4.csv", delimiter=',')
 data = [my_data0, my_data1, my_data2, my_data3, my_data4]
 
-plt.boxplot([my_data0[:,0],my_data1[:,0],my_data2[:,0],my_data3[:,0],my_data4[:,0]])
+plt.boxplot([my_data0[:,1],my_data1[:,1],my_data2[:,1],my_data3[:,1],my_data4[:,1]])
 plt.xlabel("Action")
 plt.ylabel("Distance (m)")
 plt.title("1 Difference in distance between prediction and actual situation")
-plt.show()
-plt.boxplot([my_data0[:,1],my_data1[:,1],my_data2[:,1],my_data3[:,1],my_data4[:,1] ])
+plt.savefig("Distance")
+plt.boxplot([my_data0[:,0],my_data1[:,0],my_data2[:,0],my_data3[:,0],my_data4[:,0] ])
 plt.xlabel("Action")
-plt.ylabel("Distance (m)")
+plt.ylabel("Speed (m/s)")
 plt.title("2 Difference in speed between prediction and actual situation")
-plt.show()
-plt.boxplot([my_data0[:,2],my_data1[:,2],my_data2[:,2],my_data3[:,2],my_data4[:,2] ])
-plt.xlabel("Action")
-plt.ylabel("Speed")
-plt.title("Difference in acceleration between prediction and actual situation")
-plt.show()
+plt.savefig("Speed")
 
 
 #for set in data:

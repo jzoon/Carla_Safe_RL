@@ -8,7 +8,7 @@ from parameters import *
 from CarEnv import *
 
 
-MODEL_PATH = "models/far_dest___501.03max__288.95avg_-301.25min__1605733944.model"
+MODEL_PATH = "models/long_no_shield___474.28max__184.33avg____6.34min__1607259708.model"
 
 if __name__ == "__main__":
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             step += 1
             step_start = time.time()
             qs = model.predict(np.expand_dims(current_state, axis=0))[0]
-            action = np.argmax(qs)
+            action = np.argsort(qs)
 
             new_state, reward, done, _ = env.step(action)
             current_state = new_state
