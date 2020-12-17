@@ -5,6 +5,7 @@ import tensorflow as tf
 import keras.backend.tensorflow_backend as backend
 from DQNAgent import *
 from CarEnv import *
+from CarFollowing import *
 import os
 from threading import Thread
 from tqdm import tqdm
@@ -35,6 +36,7 @@ if __name__ == '__main__':
 
     agent = DQNAgent()
     env = CarEnv()
+    car_follow = CarFollowing()
 
     trainer_thread = Thread(target=agent.train_in_loop, daemon=True)
     trainer_thread.start()
@@ -60,7 +62,14 @@ if __name__ == '__main__':
             else:
                 action_list = list(range(len(ACC_ACTIONS) * len(STEER_ACTIONS)))
                 random.shuffle(action_list)
-                if env.speed < SPEED_LIMIT_EXPLORATION*env.vehicle.get_speed_limit():
+
+                if CAR_FOLLOWING:
+                    if np.random.random() < ETA:
+                        follow_action = env.car_following(car_follow)
+                        index = action_list.index(follow_action)
+                        action_list[index] = action_list[0]
+                        action_list[0] = follow_action
+                elif env.speed < SPEED_LIMIT_EXPLORATION*env.vehicle.get_speed_limit():
                     action = pick_random_action()
                     index = action_list.index(action)
                     action_list[index] = action_list[0]
