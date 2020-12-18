@@ -27,9 +27,9 @@ if __name__ == '__main__':
     dest_distances = []
     times = []
 
-    random.seed(1)
-    np.random.seed(1)
-    tf.set_random_seed(1)
+    #random.seed(1)
+    #np.random.seed(1)
+    #tf.set_random_seed(1)
 
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
     #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
@@ -119,10 +119,12 @@ if __name__ == '__main__':
             #    agent.model.save(
             #        f'temp_models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
 
-
         if epsilon > MIN_EPSILON:
-            epsilon *= EPSILON_DECAY
-            epsilon = max(MIN_EPSILON, epsilon)
+            if EPSILON_DECAY_LINEAR:
+                epsilon -= 1/EPISODES
+            else:
+                epsilon *= EPSILON_DECAY
+                epsilon = max(MIN_EPSILON, epsilon)
 
     agent.terminate = True
     trainer_thread.join()
