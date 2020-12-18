@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from PredictNewStateModel import predict_new_state
 import random
 from CarFollowing import *
+from Shield import shield
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -55,6 +56,7 @@ class CarEnv:
 
         self.blueprint_library = self.world.get_blueprint_library()
         self.model_3 = self.blueprint_library.filter('model3')[0]
+        self.model_3.set_attribute('color', '255,0,0')
 
         self.start_transform = self.world.get_map().get_spawn_points()[2]
         self.destination = self.world.get_map().get_spawn_points()[2]
@@ -132,7 +134,7 @@ class CarEnv:
         self.acceleration = int(math.sqrt(a.x ** 2 + a.y ** 2 + a.z ** 2))
 
         if SHIELD:
-            action = self.shield(action_list)
+            action = shield(action_list, self.speed, self.state)
         else:
             action = action_list[0]
 
@@ -275,87 +277,6 @@ class CarEnv:
 
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)
-
-    def shield(self, sorted_actions):
-        for action in sorted_actions:
-            if self.is_safe(action):
-                return action
-            else:
-                print(str(action) + " is not safe!")
-
-        print("No safe action found. RIP")
-        return 0
-
-    def is_safe(self, action):
-        distance, new_speed = predict_new_state(self.speed, action, BUFFER_TIME)
-        new_x = (WIDTH/2)
-        new_y = (HEIGHT/2) - int(distance*PIXELS_PER_METER)
-
-        return self.check_safe_trajectory(int(new_x), int(new_y), new_speed, 0)
-
-    def check_safe_trajectory(self, x, y, new_speed, angle):
-        distance = self.get_safe_distance_blocks(new_speed)
-
-        x_angle = math.sin(math.radians(angle))
-        y_angle = math.cos(math.radians(angle))
-
-        current_distance = 0
-
-        #if abs(x - WIDTH/2) < 8 and abs(y - HEIGHT/2) < 8:
-        #    current_distance = 8
-
-        rgb = BirdViewProducer.as_rgb(self.state.transpose([2, 1, 0]))
-
-        while current_distance < distance:
-            block1 = self.dangerous_block(x + math.floor(x_angle*current_distance), y - math.floor(y_angle*current_distance))
-            block2 = self.dangerous_block(x + math.floor(x_angle*current_distance), y - math.ceil(y_angle*current_distance))
-            block3 = self.dangerous_block(x + math.ceil(x_angle * current_distance), y - math.floor(y_angle * current_distance))
-            block4 = self.dangerous_block(x + math.ceil(x_angle * current_distance), y - math.ceil(y_angle * current_distance))
-
-            rgb[y - math.floor(y_angle * current_distance), x + math.floor(x_angle * current_distance)] = [0, 0, 0]
-            rgb[y - math.ceil(y_angle * current_distance), x + math.floor(x_angle * current_distance)] = [0, 0, 0]
-            rgb[y - math.floor(y_angle * current_distance), x + math.ceil(x_angle * current_distance)] = [0, 0, 0]
-            rgb[y - math.ceil(y_angle * current_distance), x + math.ceil(x_angle * current_distance)] = [0, 0, 0]
-
-            if block1 or block2 or block3 or block4:
-                return False
-
-            current_distance += 1
-
-        #plt.imshow(rgb)
-        #plt.show()
-
-        return True
-
-    def dangerous_block(self, x, y):
-        if x < 0 or x > WIDTH or y < 0 or y > HEIGHT:
-            #print("Out of state")
-            return False
-
-        if self.state[x, y, 4] == 1:
-            #print("Safe: own car")
-            return False
-        elif self.state[x, y, 0] == 0:
-            #print("Unsafe: no road")
-            return True
-        elif self.state[x, y, 3] == 1:
-            #print("Unsafe: car")
-            return True
-        elif self.state[x, y, 8] == 1:
-            #print("Unsafe: pedestrian")
-            return True
-        else:
-            #print("Safe")
-            return False
-
-    def get_safe_distance_blocks(self, speed):
-        meters = 0
-
-        while speed > 0.1:
-            dist, speed = predict_new_state(speed, 0, 0.1)
-            meters += dist
-
-        return int(meters + BUFFER_DISTANCE) * PIXELS_PER_METER
 
     def append_obstacle(self, event):
         new_obstacle_hist = self.obstacle_hist.copy()
