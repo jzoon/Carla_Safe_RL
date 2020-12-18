@@ -244,6 +244,8 @@ class CarEnv:
         else:
             self.distance += self.calculate_distance(current_location, self.previous_location)
 
+        self.previous_location = current_location
+
         if self.wrong_location() > 0:
             self.wrong_steps += 1
 
