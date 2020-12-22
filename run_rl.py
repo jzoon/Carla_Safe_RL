@@ -8,7 +8,7 @@ from parameters import *
 from CarEnv import *
 
 
-MODEL_PATH = "models/long_no_shield___474.28max__184.33avg____6.34min__1607259708.model"
+MODEL_PATH = "models/new_state___251.82max__170.41avg___69.79min__1608644042.model"
 
 if __name__ == "__main__":
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     model = load_model(MODEL_PATH)
     env = CarEnv()
     fps_counter = deque(maxlen=15)
-    model.predict(np.ones((1, WIDTH, HEIGHT, 9)))
+    model.predict(np.ones((1, STATE_NUMBER_OF_VEHICLES, 4)))
 
     for i in range(20):
         print("Restarting episode")

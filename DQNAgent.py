@@ -25,16 +25,15 @@ class DQNAgent:
         self.training_initialized = False
 
     def create_model(self):
-        inputs = layers.Input(shape=(WIDTH, HEIGHT, 9,))
+        inputs = layers.Input(shape=(STATE_NUMBER_OF_VEHICLES, 4,))
 
-        layer1 = layers.Conv2D(64, 8, strides=4, activation="relu")(inputs)
-        layer2 = layers.Conv2D(128, 4, strides=2, activation="relu")(layer1)
-        layer3 = layers.Conv2D(128, 1, strides=1, activation="relu")(layer2)
+        layer1 = layers.Dense(64, activation="relu")(inputs)
+        layer2 = layers.Dense(128, activation="relu")(layer1)
+        layer3 = layers.Dense(256, activation="relu")(layer2)
 
         layer4 = layers.Flatten()(layer3)
 
-        layer5 = layers.Dense(1024, activation="relu")(layer4)
-        action = layers.Dense(len(STEER_ACTIONS)*len(ACC_ACTIONS), activation="linear")(layer5)
+        action = layers.Dense(len(STEER_ACTIONS)*len(ACC_ACTIONS), activation="linear")(layer4)
 
         model = Model(inputs=inputs, outputs=action)
         optimizer = Adam(lr=LEARNING_RATE, clipnorm=1.0)
@@ -96,10 +95,11 @@ class DQNAgent:
             self.target_update_counter = 0
 
     def get_qs(self, state):
+
         return self.model.predict(state)[0]
 
     def train_in_loop(self):
-        X = np.random.uniform(size=(1, WIDTH, HEIGHT, 9)).astype(np.float32)
+        X = np.random.uniform(size=(1, STATE_NUMBER_OF_VEHICLES, 4)).astype(np.float32)
         y = np.random.uniform(size=(1, len(STEER_ACTIONS) * len(ACC_ACTIONS))).astype(np.float32)
 
         with self.graph.as_default():

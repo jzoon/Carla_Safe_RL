@@ -10,6 +10,7 @@ from PredictNewStateModel import predict_new_state
 import random
 from CarFollowing import *
 from Shield import shield
+import numpy as np
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -118,20 +119,22 @@ class CarEnv:
 
         self.birdview_producer.produce(agent_vehicle=self.vehicle)
         self.episode_start = time.time()
-        self.state = self.get_state()
         self.location = self.vehicle.get_location()
         self.transform = self.vehicle.get_transform()
+        self.velocity = self.vehicle.get_velocity()
+        self.state = self.get_state()
 
         return self.state
 
     def step(self, action_list):
-        self.state = self.get_state()
         self.transform = self.vehicle.get_transform()
         self.location = self.transform.location
-        v = self.vehicle.get_velocity()
-        self.speed = int(math.sqrt(v.x ** 2 + v.y ** 2 + v.z ** 2))
+        self.velocity = self.vehicle.get_velocity()
+        self.speed = int(math.sqrt(self.velocity.x ** 2 + self.velocity.y ** 2 + self.velocity.z ** 2))
         a = self.vehicle.get_acceleration()
         self.acceleration = int(math.sqrt(a.x ** 2 + a.y ** 2 + a.z ** 2))
+
+        self.state = self.get_state()
 
         if SHIELD:
             action = shield(action_list, self.speed, self.state)
@@ -272,7 +275,35 @@ class CarEnv:
         return False
 
     def get_state(self):
-        return self.birdview_producer.produce(agent_vehicle=self.vehicle).transpose((2, 1, 0))
+        vehicle_list = self.world.get_actors().filter("vehicle.*")
+
+        distances = []
+        closest_vehicles = []
+
+        for vehicle in vehicle_list:
+            if vehicle != self.vehicle:
+                vehicle_location = vehicle.get_location()
+                distance = self.calculate_distance(self.location, vehicle_location)
+
+                if len(distances) < STATE_NUMBER_OF_VEHICLES - 1:
+                    distances.append(distance)
+                    closest_vehicles.append(vehicle)
+                elif distance < max(distances):
+                    index = distances.index(max(distances))
+                    distances[index] = distance
+                    closest_vehicles[index] = vehicle
+
+        state = [[self.location.x, self.location.y, self.velocity.x, self.velocity.y]]
+
+        while len(closest_vehicles) > 0:
+            index = distances.index(min(distances))
+            location = closest_vehicles[index].get_location()
+            velocity = closest_vehicles[index].get_velocity()
+            state.append([location.x, location.y, velocity.x, velocity.y])
+            del distances[index]
+            del closest_vehicles[index]
+
+        return state
 
     def get_KPI(self):
         return self.distance, len(self.collision_hist) > 0, self.wrong_steps, self.previous_distance_to_destination

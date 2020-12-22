@@ -42,7 +42,7 @@ if __name__ == '__main__':
     trainer_thread.start()
     while not agent.training_initialized:
         time.sleep(0.01)
-    agent.get_qs(np.ones((1, WIDTH, HEIGHT, 9)))
+    agent.get_qs(np.ones((1, STATE_NUMBER_OF_VEHICLES, 4)))
 
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         env.collision_hist = []
