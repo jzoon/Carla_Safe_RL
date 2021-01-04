@@ -136,7 +136,7 @@ class CarEnv:
         self.state = self.get_state()
 
         if SHIELD:
-            action = shield(action_list, self.speed, self.state)
+            action = self.shield(action_list)
         else:
             action = action_list[0]
 
@@ -148,6 +148,9 @@ class CarEnv:
         #p_distance, p_speed = predict_new_state(w_speed, action, 0.5)
 
         self.car_control(action)
+
+        self.obstacle_hist = []
+
         time.sleep(ACTION_TO_STATE_TIME)
 
         self.state = self.get_state()
@@ -179,9 +182,9 @@ class CarEnv:
         if DEST:
             reward, done = self.reward_dest()
 
-        if SHIELD:
-            if action != action_list[0]:
-                reward -= 10
+        #if SHIELD:
+        #    if action != action_list[0]:
+        #        reward -= 10
 
         reward += self.reward_simple()
 
@@ -326,7 +329,6 @@ class CarEnv:
 
         if len(self.obstacle_hist) > 0:
             obstacle = self.obstacle_hist[0]
-            self.obstacle_hist = []
 
             v = obstacle.other_actor.get_velocity()
             other_velocity = math.sqrt(v.x ** 2 + v.y ** 2)
@@ -334,3 +336,12 @@ class CarEnv:
             return car_following.get_action(self.speed, obstacle.distance, desired_velocity, other_velocity)
         else:
             return car_following.get_action(self.speed, -1, desired_velocity, -1)
+
+    def shield(self, action_list):
+        if len(self.obstacle_hist) > 0:
+            closest_object = self.obstacle_hist[0]
+            closest_object_distance = self.calculate_distance(self.location, closest_object.other_actor.get_location())
+
+            return shield(action_list, self.speed, closest_object_distance)
+        else:
+            return action_list[0]
