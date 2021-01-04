@@ -21,6 +21,11 @@ class CarFollowing:
         return action
 
     def calculate_acceleration(self, velocity, distance, desired_vel, other_velocity):
+        if distance == 0:
+            distance = 1
+        if desired_vel == 0:
+            desired_vel = 1
+
         d_start = self.d_0 + self.T * velocity + ((velocity*(velocity-other_velocity))/(2*math.sqrt(self.a*self.b)))
         v = self.a * (1 - (velocity/desired_vel)**self.delta - (d_start/distance)**2)
 

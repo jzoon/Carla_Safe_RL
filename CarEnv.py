@@ -107,13 +107,12 @@ class CarEnv:
         self.actor_list.append(self.lanesensor)
         self.lanesensor.listen(lambda event: self.lane_hist.append(event))
 
-        if CAR_FOLLOWING:
-            obstacle_sensor = self.blueprint_library.find('sensor.other.obstacle')
-            obstacle_sensor.set_attribute('only_dynamics', 'True')
-            obstacle_sensor.set_attribute('distance', '50')
-            self.obstacle_sensor = self.world.spawn_actor(obstacle_sensor, sensor_transform, attach_to=self.vehicle)
-            self.actor_list.append(self.obstacle_sensor)
-            self.obstacle_sensor.listen(lambda event: self.append_obstacle(event))
+        obstacle_sensor = self.blueprint_library.find('sensor.other.obstacle')
+        obstacle_sensor.set_attribute('only_dynamics', 'True')
+        obstacle_sensor.set_attribute('distance', '50')
+        self.obstacle_sensor = self.world.spawn_actor(obstacle_sensor, sensor_transform, attach_to=self.vehicle)
+        self.actor_list.append(self.obstacle_sensor)
+        self.obstacle_sensor.listen(lambda event: self.append_obstacle(event))
 
         self.previous_distance_to_destination = self.calculate_distance(self.destination.location, self.start_transform.location)
 
@@ -277,23 +276,25 @@ class CarEnv:
     def get_state(self):
         vehicle_list = self.world.get_actors().filter("vehicle.*")
 
+        if len(vehicle_list) < 40:
+            spawn_npc.main()
+
         distances = []
         closest_vehicles = []
 
         for vehicle in vehicle_list:
-            if vehicle != self.vehicle:
-                vehicle_location = vehicle.get_location()
-                distance = self.calculate_distance(self.location, vehicle_location)
+            vehicle_location = vehicle.get_location()
+            distance = self.calculate_distance(self.location, vehicle_location)
 
-                if len(distances) < STATE_NUMBER_OF_VEHICLES - 1:
-                    distances.append(distance)
-                    closest_vehicles.append(vehicle)
-                elif distance < max(distances):
-                    index = distances.index(max(distances))
-                    distances[index] = distance
-                    closest_vehicles[index] = vehicle
+            if len(distances) < STATE_NUMBER_OF_VEHICLES:
+                distances.append(distance)
+                closest_vehicles.append(vehicle)
+            elif distance < max(distances):
+                index = distances.index(max(distances))
+                distances[index] = distance
+                closest_vehicles[index] = vehicle
 
-        state = [[self.location.x, self.location.y, self.velocity.x, self.velocity.y]]
+        state = []
 
         while len(closest_vehicles) > 0:
             index = distances.index(min(distances))
