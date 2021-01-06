@@ -28,7 +28,6 @@ class CarEnv:
     actor_list = []
     collision_hist = []
     lane_hist = []
-    obstacle_hist = []
     distance = 0
     wrong_steps = 0
     previous_location = None
@@ -41,6 +40,7 @@ class CarEnv:
     location = None
     previous_distance_to_destination = 0
     transform = None
+    obstacle = None
 
     def __init__(self):
         self.client = carla.Client('localhost', 2000)
@@ -148,8 +148,6 @@ class CarEnv:
         #p_distance, p_speed = predict_new_state(w_speed, action, 0.5)
 
         self.car_control(action)
-
-        self.obstacle_hist = []
 
         time.sleep(ACTION_TO_STATE_TIME)
 
@@ -316,31 +314,22 @@ class CarEnv:
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)
 
     def append_obstacle(self, event):
-        new_obstacle_hist = self.obstacle_hist.copy()
-        for obstacle in self.obstacle_hist:
-            if obstacle.other_actor.id == event.other_actor.id:
-                new_obstacle_hist.remove(obstacle)
-
-        new_obstacle_hist.append(event)
-        self.obstacle_hist = new_obstacle_hist
+        self.obstacle = event
 
     def car_following(self, car_following):
         desired_velocity = self.vehicle.get_speed_limit() * 0.95
 
-        if len(self.obstacle_hist) > 0:
-            obstacle = self.obstacle_hist[0]
-
-            v = obstacle.other_actor.get_velocity()
+        if self.obstacle is not None:
+            v = self.obstacle.other_actor.get_velocity()
             other_velocity = math.sqrt(v.x ** 2 + v.y ** 2)
 
-            return car_following.get_action(self.speed, obstacle.distance, desired_velocity, other_velocity)
+            return car_following.get_action(self.speed, self.obstacle.distance, desired_velocity, other_velocity)
         else:
             return car_following.get_action(self.speed, -1, desired_velocity, -1)
 
     def shield(self, action_list):
-        if len(self.obstacle_hist) > 0:
-            closest_object = self.obstacle_hist[0]
-            closest_object_distance = self.calculate_distance(self.location, closest_object.other_actor.get_location())
+        if self.obstacle is not None:
+            closest_object_distance = self.calculate_distance(self.location, self.obstacle.other_actor.get_location())
 
             return shield(action_list, self.speed, closest_object_distance)
         else:
