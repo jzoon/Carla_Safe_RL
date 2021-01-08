@@ -200,6 +200,8 @@ class CarEnv:
 
     def reward_simple(self):
         v_max = self.vehicle.get_speed_limit()
+        if v_max < 1:
+            v_max = 50
 
         return SIMPLE_REWARD_A * (self.speed / v_max)
 
