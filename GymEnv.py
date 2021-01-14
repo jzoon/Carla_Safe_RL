@@ -10,6 +10,7 @@ class GymEnv:
         self.env = gym.make('highway-v0')
         self.env.config["lanes_count"] = 2
         self.env.config["action"]["type"] = "ContinuousAction"
+        self.env.config["initial_lane_id"] = 1
         self.episode_start = time.time()
         self.speeds = []
         self.episode_end = time.time()
@@ -19,12 +20,17 @@ class GymEnv:
         self.episode_start = time.time()
         self.env.reset()
         obs, reward, done, info = self.env.step([0, 0])
-        self.speeds = []
+        self.speeds = [25]
 
         return obs_to_state(obs)
 
     def step(self, action):
-        obs, reward, done, info = self.env.step(int_to_action(action))
+        a = int_to_action(action)
+
+        if self.speeds[-1] < 1 and a < 0:
+            a = 0
+
+        obs, reward, done, info = self.env.step(a)
         self.env.render()
         self.speeds.append(info['speed'])
 

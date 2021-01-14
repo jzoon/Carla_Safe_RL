@@ -58,7 +58,7 @@ if __name__ == '__main__':
             current_time = time.time()
 
             if np.random.random() > epsilon:
-                action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))
+                action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))[::-1]
             else:
                 action_list = list(range(len(ACC_ACTIONS) * len(STEER_ACTIONS)))
                 random.shuffle(action_list)
