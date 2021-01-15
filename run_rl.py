@@ -17,7 +17,7 @@ if __name__ == "__main__":
     model = load_model(MODEL_PATH)
     env = CarEnv()
     fps_counter = deque(maxlen=15)
-    model.predict(np.ones((1, STATE_NUMBER_OF_VEHICLES, 4)))
+    model.predict(np.ones((1, STATE_NUMBER_OF_VEHICLES, STATE_WIDTH)))
 
     for i in range(20):
         print("Restarting episode")
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             step += 1
             step_start = time.time()
             qs = model.predict(np.expand_dims(current_state, axis=0))[0]
-            action = np.argsort(qs)
+            action = np.argsort(qs)[::-1]
 
             new_state, reward, done, _ = env.step(action)
             current_state = new_state

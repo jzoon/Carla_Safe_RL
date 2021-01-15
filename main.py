@@ -42,7 +42,7 @@ if __name__ == '__main__':
     trainer_thread.start()
     while not agent.training_initialized:
         time.sleep(0.01)
-    agent.get_qs(np.ones((1, STATE_NUMBER_OF_VEHICLES, 4)))
+    agent.get_qs(np.ones((1, STATE_NUMBER_OF_VEHICLES, STATE_WIDTH)))
 
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         env.collision_hist = []
@@ -58,7 +58,7 @@ if __name__ == '__main__':
             current_time = time.time()
 
             if np.random.random() > epsilon:
-                action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))
+                action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))[::-1]
             else:
                 action_list = list(range(len(ACC_ACTIONS) * len(STEER_ACTIONS)))
                 random.shuffle(action_list)

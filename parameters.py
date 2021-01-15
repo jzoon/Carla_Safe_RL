@@ -1,5 +1,5 @@
 # Simulation
-MODEL_NAME = "pres_no_shield_no_policy"
+MODEL_NAME = "bug_fix_test"
 
 SECONDS_PER_EPISODE = 40
 EPISODES = 250
@@ -17,12 +17,8 @@ SIMPLE_REWARD_A = 3
 SIMPLE_REWARD_B = 200
 DEST = True
 
-# State and action
-WIDTH = 40
-HEIGHT = 160
-PIXELS_PER_METER = 2
-
 STATE_NUMBER_OF_VEHICLES = 7
+STATE_WIDTH = 4
 
 FPS = 4
 ACTION_TO_STATE_TIME = 0.1
