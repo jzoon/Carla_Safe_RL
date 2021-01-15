@@ -27,6 +27,7 @@ class DQNAgent:
     def create_model(self):
         inputs = layers.Input(shape=(STATE_NUMBER_OF_VEHICLES, STATE_WIDTH,))
 
+
         layer1 = layers.Dense(64, activation="relu")(inputs)
         layer2 = layers.Dense(128, activation="relu")(layer1)
         layer3 = layers.Dense(256, activation="relu")(layer2)
