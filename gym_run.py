@@ -9,7 +9,7 @@ if __name__ == "__main__":
     model = load_model(MODEL_PATH)
     env = GymEnv()
     fps_counter = deque(maxlen=15)
-    model.predict(np.ones((1, STATE_NUMBER_OF_VEHICLES, 5)))
+    model.predict(np.ones((1, STATE_NUMBER_OF_VEHICLES, STATE_WIDTH)))
 
     for i in range(20):
         print("Restarting episode")

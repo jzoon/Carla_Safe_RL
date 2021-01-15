@@ -63,13 +63,6 @@ class CarEnv:
         self.destination = self.world.get_map().get_spawn_points()[2]
         self.destination.location.x -= DESTINATION_DISTANCE
 
-        self.birdview_producer = BirdViewProducer(
-            self.destination,
-            self.client,
-            target_size=PixelDimensions(width=WIDTH, height=HEIGHT),
-            pixels_per_meter=PIXELS_PER_METER,
-            crop_type=BirdViewCropType.FRONT_AND_REAR_AREA)
-
         if OTHER_TRAFFIC:
             spawn_npc.main()
 
@@ -116,7 +109,6 @@ class CarEnv:
 
         self.previous_distance_to_destination = self.calculate_distance(self.destination.location, self.start_transform.location)
 
-        self.birdview_producer.produce(agent_vehicle=self.vehicle)
         self.episode_start = time.time()
         self.location = self.vehicle.get_location()
         self.transform = self.vehicle.get_transform()

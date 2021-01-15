@@ -30,7 +30,7 @@ if __name__ == '__main__':
     trainer_thread.start()
     while not agent.training_initialized:
         time.sleep(0.01)
-    agent.get_qs(np.ones((1, STATE_NUMBER_OF_VEHICLES, 5)))
+    agent.get_qs(np.ones((1, STATE_NUMBER_OF_VEHICLES, STATE_WIDTH)))
 
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         agent.tensorboard.step = episode

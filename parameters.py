@@ -1,11 +1,10 @@
 # Simulation
-
-MODEL_NAME = "bug_fix_test"
+MODEL_NAME = "testtest"
 
 SECONDS_PER_EPISODE = 40
 EPISODES = 250
 
-RENDERING = False
+RENDERING = True
 OTHER_TRAFFIC = True
 SHIELD = False
 CAR_FOLLOWING = False
