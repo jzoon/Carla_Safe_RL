@@ -70,6 +70,7 @@ class CarEnv:
         self.distance = 0
         self.wrong_steps = 0
         self.previous_location = None
+        self.obstacle = None
 
         self.collision_hist = []
         self.actor_list = []
@@ -102,13 +103,20 @@ class CarEnv:
 
         obstacle_sensor = self.blueprint_library.find('sensor.other.obstacle')
         obstacle_sensor.set_attribute('only_dynamics', 'True')
-        obstacle_sensor.set_attribute('distance', '50')
+        obstacle_sensor.set_attribute('distance', '200')
         self.obstacle_sensor = self.world.spawn_actor(obstacle_sensor, sensor_transform, attach_to=self.vehicle)
         self.actor_list.append(self.obstacle_sensor)
         self.obstacle_sensor.listen(lambda event: self.append_obstacle(event))
 
         self.previous_distance_to_destination = self.calculate_distance(self.destination.location, self.start_transform.location)
 
+        time.sleep(0.5)
+        if self.obstacle is not None:
+            while self.calculate_distance(self.vehicle.get_location(), self.obstacle.other_actor.get_location()) < 15:
+                time.sleep(0.1)
+
+        velocity = carla.Vector3D(-INITIAL_SPEED, 0, 0)
+        self.vehicle.set_velocity(velocity)
         self.episode_start = time.time()
         self.location = self.vehicle.get_location()
         self.transform = self.vehicle.get_transform()
@@ -121,7 +129,7 @@ class CarEnv:
         self.transform = self.vehicle.get_transform()
         self.location = self.transform.location
         self.velocity = self.vehicle.get_velocity()
-        self.speed = int(math.sqrt(self.velocity.x ** 2 + self.velocity.y ** 2 + self.velocity.z ** 2))
+        self.speed = math.sqrt(self.velocity.x ** 2 + self.velocity.y ** 2 + self.velocity.z ** 2)
         a = self.vehicle.get_acceleration()
         self.acceleration = int(math.sqrt(a.x ** 2 + a.y ** 2 + a.z ** 2))
 
@@ -132,60 +140,38 @@ class CarEnv:
         else:
             action = action_list[0]
 
-        #temp_time = time.time()
-        #w_location = self.vehicle.get_location()
-        #w_acc = -self.vehicle.get_acceleration().x
-        #w_speed = -self.vehicle.get_velocity().x
-
-        #p_distance, p_speed = predict_new_state(w_speed, action, 0.5)
-
         self.car_control(action)
 
         time.sleep(ACTION_TO_STATE_TIME)
 
-        self.state = self.get_state()
         self.transform = self.vehicle.get_transform()
         self.location = self.transform.location
         v = self.vehicle.get_velocity()
-        self.speed = int(math.sqrt(v.x ** 2 + v.y ** 2 + v.z ** 2))
+        self.speed = math.sqrt(v.x ** 2 + v.y ** 2 + v.z ** 2)
+        self.state = self.get_state()
         self.update_KPIs(self.location)
         reward, done = self.get_reward_and_done(action, action_list)
 
-        #time.sleep(0.5 - (time.time() - temp_time))
-        #new_loc = self.vehicle.get_location()
-        #driven = self.calculate_distance(new_loc, w_location)
-        #distance_dif = p_distance - driven
-        #new_vel = -self.vehicle.get_velocity().x
-        #speed_dif = p_speed - new_vel
+        vehicle_list = self.world.get_actors().filter("vehicle.*")
 
-        #with open("difplots/" + str(action) + ".csv", "a") as file:
-        #    if w_speed > 0.5:
-        #        write_str = str(speed_dif) + ',' + str(distance_dif) + '\n'
-        #        file.write(write_str)
+        if len(vehicle_list) < 40:
+            spawn_npc.main()
 
-        return self.state, reward, done, None
+        return self.state, reward, done, action
 
     def get_reward_and_done(self, action, action_list):
-        reward = 0
         done = False
 
-        if DEST:
-            reward, done = self.reward_dest()
-
-        #if SHIELD:
-        #    if action != action_list[0]:
-        #        reward -= 10
-
-        reward += self.reward_simple()
-
-        if REWARD_FUNCTION == 'complex':
-            reward += self.reward_complex()
+        reward = self.reward_simple()
 
         if len(self.collision_hist) != 0:
             done = True
-            reward = -200
+            reward -= SIMPLE_REWARD_B
 
         if self.episode_start + SECONDS_PER_EPISODE < time.time():
+            done = True
+
+        if self.passed_destination(self.location, self.previous_location):
             done = True
 
         return reward, done
@@ -196,31 +182,6 @@ class CarEnv:
             v_max = 50
 
         return SIMPLE_REWARD_A * (self.speed / v_max)
-
-    def reward_dest(self):
-        dist_to_dest = self.calculate_distance(self.location, self.destination.location)
-
-        if self.passed_destination(self.location, self.previous_location):
-            self.previous_distance_to_destination = 0
-            return 100, True
-        elif dist_to_dest < self.previous_distance_to_destination:
-            reward = 2 * (self.previous_distance_to_destination - dist_to_dest)
-            self.previous_distance_to_destination = dist_to_dest
-
-            return reward, False
-
-        return 0, False
-
-    def reward_complex(self):
-        reward = 0
-
-        if self.wrong_location() != 0:
-            reward -= 10
-
-        reward -= len(self.lane_hist) * 10
-        self.lane_hist = []
-
-        return reward
 
     def car_control(self, action):
         steer_action = int(action / len(ACC_ACTIONS))
@@ -269,37 +230,16 @@ class CarEnv:
         return False
 
     def get_state(self):
-        vehicle_list = self.world.get_actors().filter("vehicle.*")
+        if self.obstacle is not None:
+            vel = self.obstacle.other_actor.get_velocity()
+            other_speed = math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2)
+            loc = self.obstacle.other_actor.get_location()
+            distance = self.calculate_distance(self.location, loc)
+        else:
+            distance = 1000
+            other_speed = 100
 
-        if len(vehicle_list) < 40:
-            spawn_npc.main()
-
-        distances = []
-        closest_vehicles = []
-
-        for vehicle in vehicle_list:
-            vehicle_location = vehicle.get_location()
-            distance = self.calculate_distance(self.location, vehicle_location)
-
-            if len(distances) < STATE_NUMBER_OF_VEHICLES:
-                distances.append(distance)
-                closest_vehicles.append(vehicle)
-            elif distance < max(distances):
-                index = distances.index(max(distances))
-                distances[index] = distance
-                closest_vehicles[index] = vehicle
-
-        state = []
-
-        while len(closest_vehicles) > 0:
-            index = distances.index(min(distances))
-            location = closest_vehicles[index].get_location()
-            velocity = closest_vehicles[index].get_velocity()
-            state.append([location.x, location.y, velocity.x, velocity.y])
-            del distances[index]
-            del closest_vehicles[index]
-
-        return state
+        return [[self.speed, distance, other_speed]]
 
     def get_KPI(self):
         return self.distance, len(self.collision_hist) > 0, self.wrong_steps, self.previous_distance_to_destination

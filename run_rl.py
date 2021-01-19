@@ -8,7 +8,7 @@ from parameters import *
 from CarEnv import *
 
 
-MODEL_PATH = "models/bug_fix_test___290.92max__192.64avg__138.54min__1610640882.model"
+MODEL_PATH = "models/small_network_high_lr____12.30max____7.17avg____0.90min__1610970778.model"
 
 if __name__ == "__main__":
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     model = load_model(MODEL_PATH)
     env = CarEnv()
     fps_counter = deque(maxlen=15)
-    model.predict(np.ones((1, STATE_NUMBER_OF_VEHICLES, STATE_WIDTH)))
+    model.predict(np.ones((1, STATE_LENGTH, STATE_WIDTH)))
 
     for i in range(20):
         print("Restarting episode")
@@ -42,7 +42,7 @@ if __name__ == "__main__":
             frame_time = time.time() - step_start
             fps_counter.append(frame_time)
             print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
-
+            print(qs)
             print()
 
         print()

@@ -25,14 +25,14 @@ class DQNAgent:
         self.training_initialized = False
 
     def create_model(self):
-        inputs = layers.Input(shape=(STATE_NUMBER_OF_VEHICLES, STATE_WIDTH,))
+        inputs = layers.Input(shape=(STATE_LENGTH, STATE_WIDTH,))
 
 
-        layer1 = layers.Dense(64, activation="relu")(inputs)
-        layer2 = layers.Dense(128, activation="relu")(layer1)
-        layer3 = layers.Dense(256, activation="relu")(layer2)
+        layer1 = layers.Dense(32, activation="relu")(inputs)
+        #layer2 = layers.Dense(64, activation="relu")(layer1)
+        #layer3 = layers.Dense(256, activation="relu")(layer2)
 
-        layer4 = layers.Flatten()(layer3)
+        layer4 = layers.Flatten()(layer1)
 
         action = layers.Dense(len(STEER_ACTIONS)*len(ACC_ACTIONS), activation="linear")(layer4)
 
@@ -100,7 +100,7 @@ class DQNAgent:
         return self.model.predict(state)[0]
 
     def train_in_loop(self):
-        X = np.random.uniform(size=(1, STATE_NUMBER_OF_VEHICLES, STATE_WIDTH)).astype(np.float32)
+        X = np.random.uniform(size=(1, STATE_LENGTH, STATE_WIDTH)).astype(np.float32)
         y = np.random.uniform(size=(1, len(STEER_ACTIONS) * len(ACC_ACTIONS))).astype(np.float32)
 
         with self.graph.as_default():

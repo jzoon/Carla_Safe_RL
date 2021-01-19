@@ -27,6 +27,11 @@ if __name__ == '__main__':
     dest_distances = []
     times = []
 
+    if SAVE_EXPERIENCES:
+        file_name = r"experiences/" + MODEL_NAME + "_" + str(int(time.time())) + ".csv"
+        f = open(file_name, "x")
+        f.close()
+
     #random.seed(1)
     #np.random.seed(1)
     #tf.set_random_seed(1)
@@ -42,7 +47,7 @@ if __name__ == '__main__':
     trainer_thread.start()
     while not agent.training_initialized:
         time.sleep(0.01)
-    agent.get_qs(np.ones((1, STATE_NUMBER_OF_VEHICLES, STATE_WIDTH)))
+    agent.get_qs(np.ones((1, STATE_LENGTH, STATE_WIDTH)))
 
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         env.collision_hist = []
@@ -75,15 +80,26 @@ if __name__ == '__main__':
                     action_list[index] = action_list[0]
                     action_list[0] = action
 
+            #print("Action: " + str(action_list[0]))
+
             time_spent = time.time() - previous_time
             if time_spent < 1/FPS:
                 time.sleep(1/FPS - time_spent)
                 previous_time = time.time()
 
             new_state, reward, done, chosen_action = env.step(action_list)
+            #print("Reward: " + str(reward))
+            #print(new_state)
+
             episode_reward += reward
 
             agent.update_replay_memory((current_state, chosen_action, reward, new_state, done))
+
+            if SAVE_EXPERIENCES:
+                f = open(file_name, "a")
+                f.write(str(current_state) + "," + str(chosen_action) + "," + str(reward) + "," + str(new_state) + "\n")
+                f.close()
+
             current_state = new_state
             step += 1
 
