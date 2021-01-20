@@ -29,10 +29,10 @@ class DQNAgent:
 
 
         layer1 = layers.Dense(32, activation="relu")(inputs)
-        #layer2 = layers.Dense(64, activation="relu")(layer1)
+        layer2 = layers.Dense(64, activation="relu")(layer1)
         #layer3 = layers.Dense(256, activation="relu")(layer2)
 
-        layer4 = layers.Flatten()(layer1)
+        layer4 = layers.Flatten()(layer2)
 
         action = layers.Dense(len(STEER_ACTIONS)*len(ACC_ACTIONS), activation="linear")(layer4)
 
@@ -107,11 +107,17 @@ class DQNAgent:
             self.model.fit(X, y, verbose=False, batch_size=1)
 
         self.training_initialized = True
-
+        #training_done = 0
         while True:
             if self.terminate:
                 return
             self.train()
+            #training_done += 1
+
+            #if training_done % 100 == 0:
+            #    print(training_done)
+            #if training_done == 10000:
+            #    return
             time.sleep(0.01)
 
 

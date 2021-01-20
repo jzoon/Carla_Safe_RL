@@ -92,12 +92,11 @@ if __name__ == '__main__':
             #print(new_state)
 
             episode_reward += reward
-
             agent.update_replay_memory((current_state, chosen_action, reward, new_state, done))
 
             if SAVE_EXPERIENCES:
                 f = open(file_name, "a")
-                f.write(str(current_state) + "," + str(chosen_action) + "," + str(reward) + "," + str(new_state) + "\n")
+                f.write(str(current_state) + "," + str(chosen_action) + "," + str(reward) + "," + str(new_state) + "," + str(done) + "\n")
                 f.close()
 
             current_state = new_state

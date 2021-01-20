@@ -8,7 +8,7 @@ from parameters import *
 from CarEnv import *
 
 
-MODEL_PATH = "models/small_network_high_lr____12.30max____7.17avg____0.90min__1610970778.model"
+MODEL_PATH = "models/save_done_____3.81max____2.72avg____0.56min__1611141184.model"
 
 if __name__ == "__main__":
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
