@@ -1,5 +1,6 @@
 from parameters import *
 import math
+from vel_to_acc import *
 
 
 class CarFollowing:
@@ -9,6 +10,8 @@ class CarFollowing:
     a = 3
     b = 8
 
+    def __init__(self):
+        self.vel_to_acc = VelToAcc()
 
     def get_action(self, velocity, distance, desired_vel, other_velocity):
         if distance == -1:
@@ -16,7 +19,7 @@ class CarFollowing:
             other_velocity = 10000
 
         desired_acc = self.calculate_acceleration(velocity, distance, desired_vel, other_velocity)
-        action = self.acceleration_to_action(desired_acc)
+        action = self.acceleration_to_action(velocity, desired_acc)
 
         return action
 
@@ -31,14 +34,9 @@ class CarFollowing:
 
         return v
 
-    def acceleration_to_action(self, desired_acc):
-        if desired_acc < -2:
-            return 0
-        elif desired_acc < -0.5:
-            return 1
-        elif desired_acc < 0.5:
-            return 2
-        elif desired_acc < 3:
-            return 3
+    def acceleration_to_action(self, velocity, desired_acc):
+        for action in reversed(range(len(ACC_ACTIONS))):
+            if desired_acc > self.vel_to_acc.get_acc(action, velocity):
+                return action
 
-        return 4
+        return 0

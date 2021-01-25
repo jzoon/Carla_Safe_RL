@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 from PredictNewStateModel import predict_new_state
 import random
 from CarFollowing import *
-from Shield import shield
+#from Shield import shield
 import numpy as np
+from new_shield import shield
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -66,6 +67,8 @@ class CarEnv:
         if OTHER_TRAFFIC:
             spawn_npc.main()
 
+        self.shield_object = shield()
+
     def reset(self):
         self.distance = 0
         self.wrong_steps = 0
@@ -118,22 +121,13 @@ class CarEnv:
         velocity = carla.Vector3D(-INITIAL_SPEED, 0, 0)
         self.vehicle.set_velocity(velocity)
         self.episode_start = time.time()
-        self.location = self.vehicle.get_location()
-        self.transform = self.vehicle.get_transform()
-        self.velocity = self.vehicle.get_velocity()
-        self.state = self.get_state()
+
+        self.update_parameters()
 
         return self.state
 
     def step(self, action_list):
-        self.transform = self.vehicle.get_transform()
-        self.location = self.transform.location
-        self.velocity = self.vehicle.get_velocity()
-        self.speed = math.sqrt(self.velocity.x ** 2 + self.velocity.y ** 2 + self.velocity.z ** 2)
-        a = self.vehicle.get_acceleration()
-        self.acceleration = int(math.sqrt(a.x ** 2 + a.y ** 2 + a.z ** 2))
-
-        self.state = self.get_state()
+        self.update_parameters()
 
         if SHIELD:
             action = self.shield(action_list)
@@ -144,11 +138,7 @@ class CarEnv:
 
         time.sleep(ACTION_TO_STATE_TIME)
 
-        self.transform = self.vehicle.get_transform()
-        self.location = self.transform.location
-        v = self.vehicle.get_velocity()
-        self.speed = math.sqrt(v.x ** 2 + v.y ** 2 + v.z ** 2)
-        self.state = self.get_state()
+        self.update_parameters()
         self.update_KPIs(self.location)
         reward, done = self.get_reward_and_done(action, action_list)
 
@@ -158,6 +148,13 @@ class CarEnv:
             spawn_npc.main()
 
         return self.state, reward, done, action
+
+    def update_parameters(self):
+        self.location = self.vehicle.get_location()
+        self.transform = self.vehicle.get_transform()
+        self.velocity = self.vehicle.get_velocity()
+        self.speed = math.sqrt(self.velocity.x ** 2 + self.velocity.y ** 2 + self.velocity.z ** 2)
+        self.state = self.get_state()
 
     def get_reward_and_done(self, action, action_list):
         done = False
@@ -265,6 +262,6 @@ class CarEnv:
         if self.obstacle is not None:
             closest_object_distance = self.calculate_distance(self.location, self.obstacle.other_actor.get_location())
 
-            return shield(action_list, self.speed, closest_object_distance)
+            return self.shield_object.shield(action_list, self.speed, closest_object_distance)
         else:
             return action_list[0]
