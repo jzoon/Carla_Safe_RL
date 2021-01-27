@@ -6,50 +6,63 @@ import keras.backend.tensorflow_backend as backend
 from keras.models import load_model
 from parameters import *
 from CarEnv import *
+from tqdm import tqdm
 
 
-MODEL_PATH = "models/long_working_test_____4.47max____3.68avg____3.09min__1611191048.model"
+MODEL_PATHS = ["models/comparison_1_layer_____3.59max____2.52avg___-0.78min__1611657086.model",
+               "models/comparison_2_layer_____3.82max____3.02avg____0.54min__1611576967.model",
+               "models/comparison_3_layer_____4.05max____3.18avg____2.49min__1611664451.model"]
+EPISODES = 20
 
 if __name__ == "__main__":
-    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
-    #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
-
-    model = load_model(MODEL_PATH)
     env = CarEnv()
-    fps_counter = deque(maxlen=15)
-    model.predict(np.ones((1, STATE_LENGTH, STATE_WIDTH)))
 
-    for i in range(20):
-        print("Restarting episode")
+    for MODEL_PATH in MODEL_PATHS:
+        model = load_model(MODEL_PATH)
+        fps_counter = deque(maxlen=15)
+        model.predict(np.ones((1, STATE_LENGTH, STATE_WIDTH)))
 
-        current_state = env.reset()
-        env.collision_hist = []
-        step = 0
-        start_time = time.time()
+        all_rewards = []
+        all_collisions = []
+        all_distances = []
+        all_times = []
 
-        while True:
-            step += 1
-            step_start = time.time()
-            qs = model.predict(np.expand_dims(current_state, axis=0))[0]
-            action = np.argsort(qs)[::-1]
+        for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
+            current_state = env.reset()
+            env.collision_hist = []
+            step = 0
+            start_time = time.time()
+            episode_reward = 0
 
-            new_state, reward, done, _ = env.step(action)
-            current_state = new_state
+            while True:
+                step += 1
+                step_start = time.time()
+                qs = model.predict(np.expand_dims(current_state, axis=0))[0]
+                action = np.argsort(qs)[::-1]
 
-            if done:
-                break
+                new_state, reward, done, _ = env.step(action)
+                episode_reward += reward
+                current_state = new_state
 
-            frame_time = time.time() - step_start
-            fps_counter.append(frame_time)
-            print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
-            print(qs)
-            print()
+                if done:
+                    break
+
+                frame_time = time.time() - step_start
+                fps_counter.append(frame_time)
+                #print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
+
+            all_times.append(time.time() - start_time)
+            distance, col, _, _ = env.get_KPI()
+            all_distances.append(distance)
+            all_collisions.append(col)
+            all_rewards.append(episode_reward)
+
+            for actor in env.actor_list:
+                actor.destroy()
 
         print()
-        print("Colissions per m: " + str(int(env.get_KPI()[1]/env.get_KPI()[0])))
-        print("Distance to destination: " + str(env.get_KPI()[3]))
-        print("Percentage wrong steps: " + str(env.get_KPI()[2]/step))
+        print(MODEL_PATH)
+        print("Average reward: " + str(np.mean(all_rewards)))
+        print("Collisions per km: " + str(sum(all_collisions)/(sum(all_distances)/1000)))
+        print("Average speed: " + str(sum(all_distances)/sum(all_times)))
         print()
-
-        for actor in env.actor_list:
-            actor.destroy()

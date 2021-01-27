@@ -30,7 +30,7 @@ class DQNAgent:
 
         layer1 = layers.Dense(32, activation="relu")(inputs)
         layer2 = layers.Dense(64, activation="relu")(layer1)
-        #layer3 = layers.Dense(256, activation="relu")(layer2)
+        #layer3 = layers.Dense(128, activation="relu")(layer2)
 
         layer4 = layers.Flatten()(layer2)
 
