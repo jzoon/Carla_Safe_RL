@@ -237,7 +237,7 @@ class CarEnv:
         return [[self.speed, distance, other_speed]]
 
     def get_KPI(self):
-        return self.distance, len(self.collision_hist) > 0, self.wrong_steps, self.previous_distance_to_destination
+        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0, self.wrong_steps, self.previous_distance_to_destination
 
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)

@@ -92,7 +92,7 @@ if __name__ == '__main__':
         for actor in env.actor_list:
             actor.destroy()
 
-        distances.append(env.get_KPI()[0])
+        distances.append(min(1, env.get_KPI()[0]))
         colissions.append(int(env.get_KPI()[1]))
         wrong_locations.append(env.get_KPI()[2]/step)
         dest_distances.append(env.get_KPI()[3])
@@ -118,10 +118,13 @@ if __name__ == '__main__':
 
         if epsilon > MIN_EPSILON:
             if EPSILON_DECAY_LINEAR:
-                epsilon -= 1/EPISODES
+                epsilon -= 1/(0.9*EPISODES)
             else:
                 epsilon *= EPSILON_DECAY
                 epsilon = max(MIN_EPSILON, epsilon)
+
+    all_data = np.array([distances, times, colissions, ep_rewards]).transpose()
+    np.savetxt(r"manual_logs/" + MODEL_NAME + "_" + str(int(time.time())) + ".csv", all_data, delimiter=",")
 
     agent.terminate = True
     trainer_thread.join()
