@@ -6,12 +6,10 @@ import sys
 import glob
 import os
 import matplotlib.pyplot as plt
-from PredictNewStateModel import predict_new_state
 import random
 from CarFollowing import *
-#from Shield import shield
 import numpy as np
-from new_shield import shield
+from shield import shield
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (

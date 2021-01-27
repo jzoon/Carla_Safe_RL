@@ -11,13 +11,6 @@ from threading import Thread
 from tqdm import tqdm
 
 
-def pick_random_action():
-    steer_draw = random.choices(range(len(STEER_ACTIONS)), weights=STEER_PROBABILITIES)[0]
-    acc_draw = random.choices(range(len(ACC_ACTIONS)), weights=ACC_PROBABILITIES)[0]
-
-    return 5 * steer_draw + acc_draw
-
-
 if __name__ == '__main__':
     epsilon = 1
     ep_rewards = []
@@ -74,13 +67,6 @@ if __name__ == '__main__':
                         index = action_list.index(follow_action)
                         action_list[index] = action_list[0]
                         action_list[0] = follow_action
-                elif env.speed < SPEED_LIMIT_EXPLORATION*env.vehicle.get_speed_limit():
-                    action = pick_random_action()
-                    index = action_list.index(action)
-                    action_list[index] = action_list[0]
-                    action_list[0] = action
-
-            #print("Action: " + str(action_list[0]))
 
             time_spent = time.time() - previous_time
             if time_spent < 1/FPS:
@@ -88,8 +74,6 @@ if __name__ == '__main__':
                 previous_time = time.time()
 
             new_state, reward, done, chosen_action = env.step(action_list)
-            #print("Reward: " + str(reward))
-            #print(new_state)
 
             episode_reward += reward
             agent.update_replay_memory((current_state, chosen_action, reward, new_state, done))
@@ -131,11 +115,6 @@ if __name__ == '__main__':
                                            epsilon=epsilon, collisions_per_km=avg_colissions_per_m*1000,
                                            wrong_location=avg_wrong_location, distance_towards_destination=avg_dest_distance,
                                            speed=avg_speed)
-
-            # Save model, but only when min reward is greater or equal a set value
-            #if episode % int(EPISODES/10) == 0:
-            #    agent.model.save(
-            #        f'temp_models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
 
         if epsilon > MIN_EPSILON:
             if EPSILON_DECAY_LINEAR:
