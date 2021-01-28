@@ -9,13 +9,17 @@ from CarEnv import *
 from tqdm import tqdm
 
 
-MODEL_PATHS = ["models/comparison_1_layer_____3.59max____2.52avg___-0.78min__1611657086.model",
-               "models/comparison_2_layer_____3.82max____3.02avg____0.54min__1611576967.model",
-               "models/comparison_3_layer_____4.05max____3.18avg____2.49min__1611664451.model"]
-EPISODES = 20
+MODEL_PATHS = ["models/data_generation_____3.78max____3.07avg____0.14min__1611830785.model",
+               "models/data_generation_____4.12max____2.15avg___-0.82min__1611771954.model",
+               "models/data_generation_____4.19max____2.61avg____0.28min__1611829885.model"]
+EPISODES = 2
 
 if __name__ == "__main__":
     env = CarEnv()
+
+    all_average_rewards = []
+    all_average_collisions = []
+    all_average_speeds = []
 
     for MODEL_PATH in MODEL_PATHS:
         model = load_model(MODEL_PATH)
@@ -66,3 +70,12 @@ if __name__ == "__main__":
         print("Collisions per km: " + str(sum(all_collisions)/(sum(all_distances)/1000)))
         print("Average speed: " + str(sum(all_distances)/sum(all_times)))
         print()
+
+        all_average_rewards.append(np.mean(all_rewards))
+        all_average_collisions.append(sum(all_collisions)/(sum(all_distances)/1000))
+        all_average_speeds.append(sum(all_distances)/sum(all_times))
+
+    print("Average reward: Mean: " + str(np.mean(all_average_rewards)) + ", Std: " + str(np.std(all_average_rewards)))
+    print("Collisions per km: Mean: " + str(np.mean(all_average_collisions)) + ", Std: " + str(np.std(all_average_collisions)))
+    print("Average speed: Mean: " + str(np.mean(all_average_speeds)) + ", Std: " + str(np.std(all_average_speeds)))
+

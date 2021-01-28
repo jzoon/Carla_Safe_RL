@@ -1,3 +1,5 @@
-
 while True:
-    exec(open("main.py").read())
+    try:
+        exec(open("main.py").read())
+    except Exception:
+        continue

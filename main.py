@@ -20,6 +20,12 @@ if __name__ == '__main__':
     dest_distances = []
     times = []
 
+    save_episodes = []
+    save_rewards = []
+    save_distances = []
+    save_times = []
+    save_collisions = []
+
     if SAVE_EXPERIENCES:
         file_name = r"experiences/" + MODEL_NAME + "_" + str(int(time.time())) + ".csv"
         f = open(file_name, "x")
@@ -92,7 +98,7 @@ if __name__ == '__main__':
         for actor in env.actor_list:
             actor.destroy()
 
-        distances.append(min(1, env.get_KPI()[0]))
+        distances.append(max(1, env.get_KPI()[0]))
         colissions.append(int(env.get_KPI()[1]))
         wrong_locations.append(env.get_KPI()[2]/step)
         dest_distances.append(env.get_KPI()[3])
@@ -116,6 +122,12 @@ if __name__ == '__main__':
                                            wrong_location=avg_wrong_location, distance_towards_destination=avg_dest_distance,
                                            speed=avg_speed)
 
+            save_episodes.append(episode)
+            save_rewards.append(average_reward)
+            save_distances.append(sum(distances[-AGGREGATE_STATS_EVERY:])/len(distances[-AGGREGATE_STATS_EVERY:]))
+            save_times.append(sum(times[-AGGREGATE_STATS_EVERY:])/len(times[-AGGREGATE_STATS_EVERY:]))
+            save_collisions = sum(colissions[-AGGREGATE_STATS_EVERY:])/len(colissions[-AGGREGATE_STATS_EVERY:])
+
         if epsilon > MIN_EPSILON:
             if EPSILON_DECAY_LINEAR:
                 epsilon -= 1/(0.9*EPISODES)
@@ -123,8 +135,8 @@ if __name__ == '__main__':
                 epsilon *= EPSILON_DECAY
                 epsilon = max(MIN_EPSILON, epsilon)
 
-    all_data = np.array([distances, times, colissions, ep_rewards]).transpose()
-    np.savetxt(r"manual_logs/" + MODEL_NAME + "_" + str(int(time.time())) + ".csv", all_data, delimiter=",")
+    all_data = np.array([save_episodes, save_distances, save_times, save_collisions, save_rewards]).transpose()
+    np.savetxt(r"manual_logs/" + MODEL_NAME + "_" + str(int(time.time())) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,reward", comments="")
 
     agent.terminate = True
     trainer_thread.join()
