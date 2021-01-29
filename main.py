@@ -85,7 +85,7 @@ if __name__ == '__main__':
             agent.update_replay_memory((current_state, chosen_action, reward, new_state, done))
 
             if chosen_action != action_list[0]:
-                agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, new_state, done))
+                agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, new_state, True))
 
             if SAVE_EXPERIENCES:
                 f = open(file_name, "a")
@@ -126,7 +126,7 @@ if __name__ == '__main__':
             save_rewards.append(average_reward)
             save_distances.append(sum(distances[-AGGREGATE_STATS_EVERY:])/len(distances[-AGGREGATE_STATS_EVERY:]))
             save_times.append(sum(times[-AGGREGATE_STATS_EVERY:])/len(times[-AGGREGATE_STATS_EVERY:]))
-            save_collisions = sum(colissions[-AGGREGATE_STATS_EVERY:])/len(colissions[-AGGREGATE_STATS_EVERY:])
+            save_collisions.append(sum(colissions[-AGGREGATE_STATS_EVERY:])/len(colissions[-AGGREGATE_STATS_EVERY:]))
 
         if epsilon > MIN_EPSILON:
             if EPSILON_DECAY_LINEAR:

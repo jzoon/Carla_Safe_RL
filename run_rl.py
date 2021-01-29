@@ -9,10 +9,13 @@ from CarEnv import *
 from tqdm import tqdm
 
 
-MODEL_PATHS = ["models/data_generation_____3.78max____3.07avg____0.14min__1611830785.model",
-               "models/data_generation_____4.12max____2.15avg___-0.82min__1611771954.model",
-               "models/data_generation_____4.19max____2.61avg____0.28min__1611829885.model"]
-EPISODES = 2
+MODEL_PATHS = ["models/new_data_generation_____3.80max____3.37avg____2.22min__1611872985.model",
+                "models/new_data_generation_____3.85max____2.90avg___-0.75min__1611887415.model",
+                "models/new_data_generation_____3.92max____2.79avg___-0.78min__1611858073.model",
+                "models/new_data_generation_____4.30max____3.03avg____0.83min__1611880164.model",
+                "models/new_data_generation_____4.44max____3.02avg___-1.00min__1611895317.model",
+                "models/new_data_generation_____4.55max____3.06avg____0.30min__1611865669.model"]
+EPISODES = 50
 
 if __name__ == "__main__":
     env = CarEnv()

@@ -1,7 +1,7 @@
 # Simulation
-MODEL_NAME = "data_generation"
+MODEL_NAME = "new_data_generation"
 
-SECONDS_PER_EPISODE = 50
+SECONDS_PER_EPISODE = 40
 EPISODES = 250
 
 RENDERING = False
