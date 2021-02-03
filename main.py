@@ -42,6 +42,9 @@ if __name__ == '__main__':
     env = CarEnv()
     car_follow = CarFollowing()
 
+    if INITIALIZE_REPLAY_MEMORY:
+        env.shield_object.initialize_replay_memory(INITIALIZE_REPLAY_SIZE, agent)
+
     trainer_thread = Thread(target=agent.train_in_loop, daemon=True)
     trainer_thread.start()
     while not agent.training_initialized:

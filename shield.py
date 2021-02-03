@@ -1,5 +1,6 @@
 from parameters import *
 from vel_to_acc import *
+import random
 
 
 class shield:
@@ -33,3 +34,16 @@ class shield:
             speed = self.vel_to_acc.get_speed(0, speed, ACTION_TO_STATE_TIME)
 
         return meters + BUFFER_DISTANCE
+
+    def initialize_replay_memory(self, amount, agent):
+        added = 0
+
+        while added < amount:
+            speed = random.uniform(0.0, 20.0)
+            distance = random.uniform(0.0, 160.0)
+            other_speed = random.uniform(0.0, 20.0)
+            action = random.randint(1, len(ACC_ACTIONS) - 1)
+
+            if not self.is_safe(action, speed, distance):
+                agent.update_replay_memory(([[speed, distance, other_speed]], action, -SIMPLE_REWARD_B, [[speed, distance, other_speed]], True))
+                added += 1
