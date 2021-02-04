@@ -4,8 +4,8 @@ import random
 
 
 class shield:
-    def __init__(self):
-        self.vel_to_acc = VelToAcc()
+    def __init__(self, acc_actions):
+        self.vel_to_acc = VelToAcc(acc_actions)
 
     def shield(self, sorted_actions, speed, closest_object_distance):
         for action in sorted_actions:

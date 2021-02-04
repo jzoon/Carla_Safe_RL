@@ -2,11 +2,11 @@ from parameters import *
 
 
 class VelToAcc:
-    def __init__(self):
+    def __init__(self, acc_actions):
         self.all_vel = []
         self.all_acc = []
 
-        for action in ACC_ACTIONS:
+        for action in acc_actions:
             vel, acc = self.read_file(str(action))
             self.all_vel.append(vel)
             self.all_acc.append(acc)

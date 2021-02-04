@@ -5,10 +5,7 @@ import time
 import sys
 import glob
 import os
-import matplotlib.pyplot as plt
-import random
 from CarFollowing import *
-import numpy as np
 from shield import shield
 
 try:
@@ -20,24 +17,26 @@ except IndexError:
     pass
 
 import carla
-from carla_birdeye_view import BirdViewProducer, BirdViewCropType, PixelDimensions
 
 
-class CarEnv:
+class CarEnv2:
+    STATE_LENGTH = 1
+    STATE_WIDTH = 3
+
+    STEER_ACTIONS = [0]
+    ACC_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
+
     actor_list = []
     collision_hist = []
-    lane_hist = []
     distance = 0
-    wrong_steps = 0
     previous_location = None
     speed = 0
     acceleration = 0
     colsensor = None
-    lanesensor = None
     episode_start = 0
     state = None
     location = None
-    previous_distance_to_destination = 0
+    velocity = None
     transform = None
     obstacle = None
 
@@ -58,34 +57,28 @@ class CarEnv:
         self.model_3 = self.blueprint_library.filter('model3')[0]
         self.model_3.set_attribute('color', '255,0,0')
 
-        self.start_transform = self.world.get_map().get_spawn_points()[2]
-        self.destination = self.world.get_map().get_spawn_points()[2]
-        self.destination.location.x -= DESTINATION_DISTANCE
+        self.start_transform = self.world.get_map().get_spawn_points()[64]
+        self.destination = self.world.get_map().get_spawn_points()[184]
 
-        if OTHER_TRAFFIC:
-            spawn_npc.main()
+        spawn_npc.main()
 
-        self.shield_object = shield()
+        self.shield_object = shield(self.ACC_ACTIONS)
+
+        spectator = self.world.get_spectator()
+        spectator.set_transform(carla.Transform(self.start_transform.location + carla.Location(z=50),
+                                                carla.Rotation(pitch=-90)))
 
     def reset(self):
         self.distance = 0
-        self.wrong_steps = 0
         self.previous_location = None
         self.obstacle = None
 
         self.collision_hist = []
         self.actor_list = []
-        self.lane_hist = []
-
         self.vehicle = None
 
         while self.vehicle is None:
             self.vehicle = self.world.try_spawn_actor(self.model_3, self.start_transform)
-
-        #self.start_transform.location.x -= 50
-        #asfd = self.world.spawn_actor(self.model_3, self.start_transform)
-        #self.start_transform.location.x += 50
-        #self.actor_list.append(asfd)
 
         self.actor_list.append(self.vehicle)
         self.vehicle.apply_control(carla.VehicleControl(throttle=0.0, brake=0.0))
@@ -97,26 +90,19 @@ class CarEnv:
         self.actor_list.append(self.colsensor)
         self.colsensor.listen(lambda event: self.collision_hist.append(event))
 
-        lanesensor = self.blueprint_library.find('sensor.other.lane_invasion')
-        self.lanesensor = self.world.spawn_actor(lanesensor, sensor_transform, attach_to=self.vehicle)
-        self.actor_list.append(self.lanesensor)
-        self.lanesensor.listen(lambda event: self.lane_hist.append(event))
-
         obstacle_sensor = self.blueprint_library.find('sensor.other.obstacle')
         obstacle_sensor.set_attribute('only_dynamics', 'True')
-        obstacle_sensor.set_attribute('distance', '200')
+        obstacle_sensor.set_attribute('distance', '300')
         self.obstacle_sensor = self.world.spawn_actor(obstacle_sensor, sensor_transform, attach_to=self.vehicle)
         self.actor_list.append(self.obstacle_sensor)
         self.obstacle_sensor.listen(lambda event: self.append_obstacle(event))
-
-        self.previous_distance_to_destination = self.calculate_distance(self.destination.location, self.start_transform.location)
 
         time.sleep(0.5)
         if self.obstacle is not None:
             while self.calculate_distance(self.vehicle.get_location(), self.obstacle.other_actor.get_location()) < 15:
                 time.sleep(0.1)
 
-        velocity = carla.Vector3D(-INITIAL_SPEED, 0, 0)
+        velocity = carla.Vector3D(0, -INITIAL_SPEED, 0)
         self.vehicle.set_velocity(velocity)
         self.episode_start = time.time()
 
@@ -138,11 +124,11 @@ class CarEnv:
 
         self.update_parameters()
         self.update_KPIs(self.location)
-        reward, done = self.get_reward_and_done(action, action_list)
+        reward, done = self.get_reward_and_done()
 
         vehicle_list = self.world.get_actors().filter("vehicle.*")
 
-        if len(vehicle_list) < 40:
+        if len(vehicle_list) < 50:
             spawn_npc.main()
 
         return self.state, reward, done, action
@@ -154,19 +140,19 @@ class CarEnv:
         self.speed = math.sqrt(self.velocity.x ** 2 + self.velocity.y ** 2 + self.velocity.z ** 2)
         self.state = self.get_state()
 
-    def get_reward_and_done(self, action, action_list):
+    def get_reward_and_done(self):
         done = False
 
         reward = self.reward_simple()
 
+        if self.passed_destination(self.location, self.previous_location):
+            return reward, True
+
         if len(self.collision_hist) != 0:
             done = True
-            reward -= SIMPLE_REWARD_B
+            reward = -SIMPLE_REWARD_B
 
         if self.episode_start + SECONDS_PER_EPISODE < time.time():
-            done = True
-
-        if self.passed_destination(self.location, self.previous_location):
             done = True
 
         return reward, done
@@ -179,16 +165,16 @@ class CarEnv:
         return SIMPLE_REWARD_A * (self.speed / v_max)
 
     def car_control(self, action):
-        steer_action = int(action / len(ACC_ACTIONS))
-        acc_action = action % len(ACC_ACTIONS)
+        steer_action = int(action / len(self.ACC_ACTIONS))
+        acc_action = action % len(self.ACC_ACTIONS)
 
-        if ACC_ACTIONS[acc_action] < 0:
+        if self.ACC_ACTIONS[acc_action] < 0:
             self.vehicle.apply_control(
-                carla.VehicleControl(brake=-ACC_ACTIONS[acc_action], steer=STEER_ACTIONS[steer_action])
+                carla.VehicleControl(brake=-self.ACC_ACTIONS[acc_action], steer=self.STEER_ACTIONS[steer_action])
             )
         else:
             self.vehicle.apply_control(
-                carla.VehicleControl(throttle=ACC_ACTIONS[acc_action], steer=STEER_ACTIONS[steer_action])
+                carla.VehicleControl(throttle=self.ACC_ACTIONS[acc_action], steer=self.STEER_ACTIONS[steer_action])
             )
 
     def update_KPIs(self, current_location):
@@ -198,9 +184,6 @@ class CarEnv:
             self.distance += self.calculate_distance(current_location, self.previous_location)
 
         self.previous_location = current_location
-
-        if self.wrong_location() > 0:
-            self.wrong_steps += 1
 
     def wrong_location(self):
         dif = abs(abs(self.transform.rotation.yaw) - self.map.get_waypoint(self.location).transform.rotation.yaw)
@@ -237,7 +220,7 @@ class CarEnv:
         return [[self.speed, distance, other_speed]]
 
     def get_KPI(self):
-        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0, self.wrong_steps, self.previous_distance_to_destination
+        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0, 0
 
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)

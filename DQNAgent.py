@@ -10,7 +10,11 @@ import time
 import random
 
 class DQNAgent:
-    def __init__(self):
+    def __init__(self, state_length, state_width, output_size):
+        self.state_length = state_length
+        self.state_width = state_width
+        self.output_size = output_size
+
         self.model = self.create_model()
         self.target_model = self.create_model()
         self.target_model.set_weights(self.model.get_weights())
@@ -25,8 +29,7 @@ class DQNAgent:
         self.training_initialized = False
 
     def create_model(self):
-        inputs = layers.Input(shape=(STATE_LENGTH, STATE_WIDTH,))
-
+        inputs = layers.Input(shape=(self.state_length, self.state_width,))
 
         layer1 = layers.Dense(32, activation="relu")(inputs)
         layer2 = layers.Dense(64, activation="relu")(layer1)
@@ -34,7 +37,7 @@ class DQNAgent:
 
         layer4 = layers.Flatten()(layer2)
 
-        action = layers.Dense(len(STEER_ACTIONS)*len(ACC_ACTIONS), activation="linear")(layer4)
+        action = layers.Dense(self.output_size, activation="linear")(layer4)
 
         model = Model(inputs=inputs, outputs=action)
         optimizer = Adam(lr=LEARNING_RATE, clipnorm=1.0)
@@ -99,8 +102,8 @@ class DQNAgent:
         return self.model.predict(state)[0]
 
     def train_in_loop(self):
-        X = np.random.uniform(size=(1, STATE_LENGTH, STATE_WIDTH)).astype(np.float32)
-        y = np.random.uniform(size=(1, len(STEER_ACTIONS) * len(ACC_ACTIONS))).astype(np.float32)
+        X = np.random.uniform(size=(1, self.state_length, self.state_width)).astype(np.float32)
+        y = np.random.uniform(size=(1, self.output_size)).astype(np.float32)
 
         with self.graph.as_default():
             self.model.fit(X, y, verbose=False, batch_size=1)

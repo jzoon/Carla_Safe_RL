@@ -10,8 +10,9 @@ class CarFollowing:
     a = 3
     b = 8
 
-    def __init__(self):
-        self.vel_to_acc = VelToAcc()
+    def __init__(self, acc_actions):
+        self.acc_actions = acc_actions
+        self.vel_to_acc = VelToAcc(acc_actions)
 
     def get_action(self, velocity, distance, desired_vel, other_velocity):
         if distance == -1:
@@ -35,7 +36,7 @@ class CarFollowing:
         return v
 
     def acceleration_to_action(self, velocity, desired_acc):
-        for action in reversed(range(len(ACC_ACTIONS))):
+        for action in reversed(range(len(self.acc_actions))):
             if desired_acc > self.vel_to_acc.get_acc(action, velocity):
                 return action
 

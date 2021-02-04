@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import keras.backend.tensorflow_backend as backend
 from DQNAgent import *
-from CarEnv import *
+from CarEnv2 import *
 from CarFollowing import *
 import os
 from threading import Thread
@@ -17,7 +17,6 @@ if __name__ == '__main__':
     colissions = []
     distances = []
     wrong_locations = []
-    dest_distances = []
     times = []
 
     save_episodes = []
@@ -38,9 +37,15 @@ if __name__ == '__main__':
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
     #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
 
-    agent = DQNAgent()
-    env = CarEnv()
-    car_follow = CarFollowing()
+    if ENVIRONMENT == 1:
+        env = CarEnv1()
+    elif ENVIRONMENT == 2:
+        env = CarEnv2()
+    else:
+        env = CarEnv3()
+
+    agent = DQNAgent(env.STATE_LENGTH, env.STATE_WIDTH, len(env.ACC_ACTIONS)*len(env.STEER_ACTIONS))
+    car_follow = CarFollowing(env.ACC_ACTIONS)
 
     if INITIALIZE_REPLAY_MEMORY:
         env.shield_object.initialize_replay_memory(INITIALIZE_REPLAY_SIZE, agent)
@@ -49,7 +54,7 @@ if __name__ == '__main__':
     trainer_thread.start()
     while not agent.training_initialized:
         time.sleep(0.01)
-    agent.get_qs(np.ones((1, STATE_LENGTH, STATE_WIDTH)))
+    agent.get_qs(np.ones((1, env.STATE_LENGTH, env.STATE_WIDTH)))
 
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         env.collision_hist = []
@@ -67,7 +72,7 @@ if __name__ == '__main__':
             if np.random.random() > epsilon:
                 action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))[::-1]
             else:
-                action_list = list(range(len(ACC_ACTIONS) * len(STEER_ACTIONS)))
+                action_list = list(range(len(env.ACC_ACTIONS) * len(env.STEER_ACTIONS)))
                 random.shuffle(action_list)
 
                 if CAR_FOLLOWING:
@@ -104,7 +109,6 @@ if __name__ == '__main__':
         distances.append(max(1, env.get_KPI()[0]))
         colissions.append(int(env.get_KPI()[1]))
         wrong_locations.append(env.get_KPI()[2]/step)
-        dest_distances.append(env.get_KPI()[3])
         times.append(time.time() - episode_start)
 
         ep_rewards.append(episode_reward)
@@ -117,13 +121,11 @@ if __name__ == '__main__':
             else:
                 avg_colissions_per_m = sum(colissions[-AGGREGATE_STATS_EVERY:])
             avg_wrong_location = sum(wrong_locations[-AGGREGATE_STATS_EVERY:]) / len(wrong_locations[-AGGREGATE_STATS_EVERY:])
-            avg_dest_distance = sum(dest_distances[-AGGREGATE_STATS_EVERY:]) / len(dest_distances[-AGGREGATE_STATS_EVERY:])
             avg_speed = sum(distances[-AGGREGATE_STATS_EVERY:])/sum(times[-AGGREGATE_STATS_EVERY:])
 
             agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward,
                                            epsilon=epsilon, collisions_per_km=avg_colissions_per_m*1000,
-                                           wrong_location=avg_wrong_location, distance_towards_destination=avg_dest_distance,
-                                           speed=avg_speed)
+                                           wrong_location=avg_wrong_location, speed=avg_speed)
 
             save_episodes.append(episode)
             save_rewards.append(average_reward)

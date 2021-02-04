@@ -5,7 +5,7 @@ import tensorflow as tf
 import keras.backend.tensorflow_backend as backend
 from keras.models import load_model
 from parameters import *
-from CarEnv import *
+from CarEnv2 import *
 from tqdm import tqdm
 
 
