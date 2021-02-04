@@ -4,7 +4,9 @@ import numpy as np
 import tensorflow as tf
 import keras.backend.tensorflow_backend as backend
 from DQNAgent import *
+from CarEnv1 import *
 from CarEnv2 import *
+from CarEnv3 import *
 from CarFollowing import *
 import os
 from threading import Thread
@@ -108,7 +110,7 @@ if __name__ == '__main__':
 
         distances.append(max(1, env.get_KPI()[0]))
         colissions.append(int(env.get_KPI()[1]))
-        wrong_locations.append(env.get_KPI()[2]/step)
+        wrong_locations.append(int(env.get_KPI()[2]))
         times.append(time.time() - episode_start)
 
         ep_rewards.append(episode_reward)
@@ -118,14 +120,17 @@ if __name__ == '__main__':
             max_reward = max(ep_rewards[-AGGREGATE_STATS_EVERY:])
             if sum(distances[-AGGREGATE_STATS_EVERY:]) > 0:
                 avg_colissions_per_m = sum(colissions[-AGGREGATE_STATS_EVERY:])/sum(distances[-AGGREGATE_STATS_EVERY:])
+                avg_left_road_per_m = sum(wrong_locations[-AGGREGATE_STATS_EVERY:]) / sum(
+                    distances[-AGGREGATE_STATS_EVERY:])
             else:
                 avg_colissions_per_m = sum(colissions[-AGGREGATE_STATS_EVERY:])
-            avg_wrong_location = sum(wrong_locations[-AGGREGATE_STATS_EVERY:]) / len(wrong_locations[-AGGREGATE_STATS_EVERY:])
+                avg_left_road_per_m = sum(wrong_locations[-AGGREGATE_STATS_EVERY:])
+
             avg_speed = sum(distances[-AGGREGATE_STATS_EVERY:])/sum(times[-AGGREGATE_STATS_EVERY:])
 
             agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward,
                                            epsilon=epsilon, collisions_per_km=avg_colissions_per_m*1000,
-                                           wrong_location=avg_wrong_location, speed=avg_speed)
+                                           left_road=avg_left_road_per_m*1000, speed=avg_speed)
 
             save_episodes.append(episode)
             save_rewards.append(average_reward)

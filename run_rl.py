@@ -5,19 +5,16 @@ import tensorflow as tf
 import keras.backend.tensorflow_backend as backend
 from keras.models import load_model
 from parameters import *
+from CarEnv1 import *
 from CarEnv2 import *
 from tqdm import tqdm
 
 
-MODEL_PATHS = ["models/both_data_generation_____3.14max____2.05avg___-0.78min__1612059650.model",
-                "models/both_data_generation_____3.67max____2.67avg___-1.00min__1612088586.model",
-                "models/both_data_generation_____3.94max____1.87avg___-1.00min__1612079122.model",
-                "models/both_data_generation_____4.24max____1.94avg___-1.00min__1612098663.model",
-                "models/both_data_generation_____4.36max____3.58avg____2.45min__1612069007.model"]
-EPISODES = 50
+MODEL_PATHS = ["models/test_scenario1_____3.02max____1.71avg____0.73min__1612443723.model"]
+EPISODES = 5
 
 if __name__ == "__main__":
-    env = CarEnv()
+    env = CarEnv1()
 
     all_average_rewards = []
     all_average_collisions = []
@@ -26,7 +23,7 @@ if __name__ == "__main__":
     for MODEL_PATH in MODEL_PATHS:
         model = load_model(MODEL_PATH)
         fps_counter = deque(maxlen=15)
-        model.predict(np.ones((1, STATE_LENGTH, STATE_WIDTH)))
+        model.predict(np.ones((1, env.STATE_LENGTH, env.STATE_WIDTH)))
 
         all_rewards = []
         all_collisions = []
@@ -46,6 +43,8 @@ if __name__ == "__main__":
                 qs = model.predict(np.expand_dims(current_state, axis=0))[0]
                 action = np.argsort(qs)[::-1]
 
+                print(qs)
+
                 new_state, reward, done, _ = env.step(action)
                 episode_reward += reward
                 current_state = new_state
@@ -58,7 +57,7 @@ if __name__ == "__main__":
                 #print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
 
             all_times.append(time.time() - start_time)
-            distance, col, _, _ = env.get_KPI()
+            distance, col, _ = env.get_KPI()
             all_distances.append(distance)
             all_collisions.append(col)
             all_rewards.append(episode_reward)

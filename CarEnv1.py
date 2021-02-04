@@ -19,26 +19,29 @@ except IndexError:
 import carla
 
 
-class CarEnv2:
+class CarEnv1:
     STATE_LENGTH = 1
-    STATE_WIDTH = 3
+    STATE_WIDTH = 2
 
-    STEER_ACTIONS = [0]
+    STEER_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
     ACC_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
 
     actor_list = []
     collision_hist = []
+    lane_hist = []
     distance = 0
     previous_location = None
     speed = 0
     acceleration = 0
     colsensor = None
+    lanesensor = None
     episode_start = 0
     state = None
     location = None
     velocity = None
     transform = None
     obstacle = None
+    left_road = False
 
     def __init__(self):
         self.client = carla.Client('localhost', 2000)
@@ -60,8 +63,6 @@ class CarEnv2:
         self.start_transform = self.world.get_map().get_spawn_points()[64]
         self.destination = self.world.get_map().get_spawn_points()[184]
 
-        spawn_npc.main()
-
         self.shield_object = shield(self.ACC_ACTIONS)
 
         spectator = self.world.get_spectator()
@@ -75,6 +76,8 @@ class CarEnv2:
 
         self.collision_hist = []
         self.actor_list = []
+        self.lane_hist = []
+        self.left_road = False
         self.vehicle = None
 
         while self.vehicle is None:
@@ -90,17 +93,11 @@ class CarEnv2:
         self.actor_list.append(self.colsensor)
         self.colsensor.listen(lambda event: self.collision_hist.append(event))
 
-        obstacle_sensor = self.blueprint_library.find('sensor.other.obstacle')
-        obstacle_sensor.set_attribute('only_dynamics', 'True')
-        obstacle_sensor.set_attribute('distance', '300')
-        self.obstacle_sensor = self.world.spawn_actor(obstacle_sensor, sensor_transform, attach_to=self.vehicle)
-        self.actor_list.append(self.obstacle_sensor)
-        self.obstacle_sensor.listen(lambda event: self.append_obstacle(event))
-
+        lanesensor = self.blueprint_library.find('sensor.other.lane_invasion')
+        self.lanesensor = self.world.spawn_actor(lanesensor, sensor_transform, attach_to=self.vehicle)
+        self.actor_list.append(self.lanesensor)
+        self.lanesensor.listen(lambda event: self.lane_hist.append(event))
         time.sleep(0.5)
-        if self.obstacle is not None:
-            while self.calculate_distance(self.vehicle.get_location(), self.obstacle.other_actor.get_location()) < 15:
-                time.sleep(0.1)
 
         velocity = carla.Vector3D(0, -INITIAL_SPEED, 0)
         self.vehicle.set_velocity(velocity)
@@ -126,11 +123,6 @@ class CarEnv2:
         self.update_KPIs(self.location)
         reward, done = self.get_reward_and_done()
 
-        vehicle_list = self.world.get_actors().filter("vehicle.*")
-
-        if len(vehicle_list) < 50:
-            spawn_npc.main()
-
         return self.state, reward, done, action
 
     def update_parameters(self):
@@ -141,21 +133,18 @@ class CarEnv2:
         self.state = self.get_state()
 
     def get_reward_and_done(self):
-        done = False
-
         reward = self.reward_simple()
 
-        if self.passed_destination(self.location, self.previous_location):
+        if self.passed_destination(self.location, self.previous_location) or self.episode_start + SECONDS_PER_EPISODE < time.time():
             return reward, True
 
         if len(self.collision_hist) != 0:
-            done = True
-            reward = -SIMPLE_REWARD_B
+            return -SIMPLE_REWARD_B, True
 
-        if self.episode_start + SECONDS_PER_EPISODE < time.time():
-            done = True
+        if len(self.lane_hist) != 0:
+            return -SIMPLE_REWARD_B, True
 
-        return reward, done
+        return reward, False
 
     def reward_simple(self):
         v_max = self.vehicle.get_speed_limit()
@@ -185,17 +174,6 @@ class CarEnv2:
 
         self.previous_location = current_location
 
-    def wrong_location(self):
-        dif = abs(abs(self.transform.rotation.yaw) - self.map.get_waypoint(self.location).transform.rotation.yaw)
-
-        if 90 <= dif <= 270:
-            return 1
-        elif self.map.get_waypoint(self.location, project_to_road=False,
-                                               lane_type=carla.LaneType.Sidewalk) is not None:
-            return 2
-
-        return 0
-
     def passed_destination(self, current_location, previous_location):
         up_x = max(current_location.x, previous_location.x) + 1
         down_x = min(current_location.x, previous_location.x) - 1
@@ -208,25 +186,13 @@ class CarEnv2:
         return False
 
     def get_state(self):
-        if self.obstacle is not None:
-            vel = self.obstacle.other_actor.get_velocity()
-            other_speed = math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2)
-            loc = self.obstacle.other_actor.get_location()
-            distance = self.calculate_distance(self.location, loc)
-        else:
-            distance = 1000
-            other_speed = 100
-
-        return [[self.speed, distance, other_speed]]
+        return [[self.transform.rotation.yaw, self.map.get_waypoint(self.location).transform.rotation.yaw]]
 
     def get_KPI(self):
-        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0, 0
+        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0, len(self.lane_hist) > 0
 
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)
-
-    def append_obstacle(self, event):
-        self.obstacle = event
 
     def car_following(self, car_following):
         desired_velocity = self.vehicle.get_speed_limit() * 0.95
