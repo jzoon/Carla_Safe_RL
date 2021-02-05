@@ -5,8 +5,6 @@ import time
 import sys
 import glob
 import os
-from CarFollowing import *
-from shield import shield
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -23,7 +21,7 @@ class CarEnv1:
     STATE_LENGTH = 1
     STATE_WIDTH = 2
 
-    STEER_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
+    STEER_ACTIONS = [-0.5, 0.0, 0.5]
     ACC_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
 
     actor_list = []
@@ -61,9 +59,7 @@ class CarEnv1:
         self.model_3.set_attribute('color', '255,0,0')
 
         self.start_transform = self.world.get_map().get_spawn_points()[64]
-        self.destination = self.world.get_map().get_spawn_points()[184]
-
-        self.shield_object = shield(self.ACC_ACTIONS)
+        self.destination = self.world.get_map().get_spawn_points()[184] # VERANDEREN ZODAT DE AUTO NIET BOTST
 
         spectator = self.world.get_spectator()
         spectator.set_transform(carla.Transform(self.start_transform.location + carla.Location(z=50),
@@ -138,10 +134,10 @@ class CarEnv1:
         if self.passed_destination(self.location, self.previous_location) or self.episode_start + SECONDS_PER_EPISODE < time.time():
             return reward, True
 
-        if len(self.collision_hist) != 0:
+        if len(self.lane_hist) != 0:
             return -SIMPLE_REWARD_B, True
 
-        if len(self.lane_hist) != 0:
+        if len(self.collision_hist) != 0:
             return -SIMPLE_REWARD_B, True
 
         return reward, False
@@ -194,21 +190,17 @@ class CarEnv1:
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)
 
-    def car_following(self, car_following):
+    def car_following(self, _):
         desired_velocity = self.vehicle.get_speed_limit() * 0.95
 
-        if self.obstacle is not None:
-            v = self.obstacle.other_actor.get_velocity()
-            other_velocity = math.sqrt(v.x ** 2 + v.y ** 2)
-
-            return car_following.get_action(self.speed, self.obstacle.distance, desired_velocity, other_velocity)
+        if self.speed < desired_velocity:
+            return 9
         else:
-            return car_following.get_action(self.speed, -1, desired_velocity, -1)
+            return 7
 
     def shield(self, action_list):
-        if self.obstacle is not None:
-            closest_object_distance = self.calculate_distance(self.location, self.obstacle.other_actor.get_location())
+        for action in action_list:
+            if self.STEER_ACTIONS[int(action / len(self.ACC_ACTIONS))] == 0.0:
+                return action
 
-            return self.shield_object.shield(action_list, self.speed, closest_object_distance)
-        else:
-            return action_list[0]
+        return 5

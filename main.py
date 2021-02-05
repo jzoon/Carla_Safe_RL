@@ -140,7 +140,7 @@ if __name__ == '__main__':
 
         if epsilon > MIN_EPSILON:
             if EPSILON_DECAY_LINEAR:
-                epsilon -= 1/(0.9*EPISODES)
+                epsilon -= 1/(EXPLORATION_STOP*EPISODES)
             else:
                 epsilon *= EPSILON_DECAY
                 epsilon = max(MIN_EPSILON, epsilon)
