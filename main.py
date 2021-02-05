@@ -46,11 +46,11 @@ if __name__ == '__main__':
     else:
         env = CarEnv3()
 
-    agent = DQNAgent(env.STATE_LENGTH, env.STATE_WIDTH, len(env.ACC_ACTIONS)*len(env.STEER_ACTIONS))
+    agent = DQNAgent(env.STATE_LENGTH, env.STATE_WIDTH, env.AMOUNT_OF_ACTIONS)
     car_follow = CarFollowing(env.ACC_ACTIONS)
 
     if INITIALIZE_REPLAY_MEMORY:
-        env.shield_object.initialize_replay_memory(INITIALIZE_REPLAY_SIZE, agent)
+        env.shield_object.initialize_replay_memory(INITIALIZE_REPLAY_SIZE, agent, env.ACC_ACTIONS)
 
     trainer_thread = Thread(target=agent.train_in_loop, daemon=True)
     trainer_thread.start()
@@ -74,7 +74,7 @@ if __name__ == '__main__':
             if np.random.random() > epsilon:
                 action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))[::-1]
             else:
-                action_list = list(range(len(env.ACC_ACTIONS) * len(env.STEER_ACTIONS)))
+                action_list = list(range(env.AMOUNT_OF_ACTIONS))
                 random.shuffle(action_list)
 
                 if CAR_FOLLOWING:

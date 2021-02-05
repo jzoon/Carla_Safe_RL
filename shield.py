@@ -35,14 +35,14 @@ class shield:
 
         return meters + BUFFER_DISTANCE
 
-    def initialize_replay_memory(self, amount, agent):
+    def initialize_replay_memory(self, amount, agent, acc_actions):
         added = 0
 
         while added < amount:
             speed = random.uniform(0.0, 20.0)
             distance = random.uniform(0.0, 160.0)
             other_speed = random.uniform(0.0, 20.0)
-            action = random.randint(1, len(ACC_ACTIONS) - 1)
+            action = random.randint(1, len(acc_actions) - 1)
 
             if not self.is_safe(action, speed, distance):
                 agent.update_replay_memory(([[speed, distance, other_speed]], action, -SIMPLE_REWARD_B, [[speed, distance, other_speed]], True))

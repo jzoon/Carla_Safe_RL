@@ -23,6 +23,7 @@ class CarEnv1:
 
     STEER_ACTIONS = [-0.5, 0.0, 0.5]
     ACC_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
+    AMOUNT_OF_ACTIONS = len(STEER_ACTIONS) * len(ACC_ACTIONS)
 
     actor_list = []
     collision_hist = []
