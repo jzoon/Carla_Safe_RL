@@ -33,6 +33,9 @@ class VelToAcc:
 
         index = min(range(len(vel)), key=lambda i: abs(vel[i]-velocity))
 
+        if index >= len(acc):
+            index = len(acc) - 1
+
         return acc[index]
 
     def get_speed(self, action, velocity, time):

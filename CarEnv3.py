@@ -59,6 +59,7 @@ class CarEnv3:
         self.model_3.set_attribute('color', '255,0,0')
 
         self.start_transform = self.world.get_map().get_spawn_points()[265]
+
         self.destination = self.world.get_map().get_spawn_points()[265]
         self.destination.location.x -= 400
         self.destination.location.y += 6
@@ -132,8 +133,11 @@ class CarEnv3:
 
         vehicle_list = self.world.get_actors().filter("vehicle.*")
 
-        if len(vehicle_list) < 10:
+        if len(vehicle_list) < 75:
             spawn_npc.main()
+
+        self.vehicle.set_transform(self.map.get_waypoint(
+            self.vehicle.get_transform().location).transform)
 
         return self.state, reward, done, action
 
@@ -171,12 +175,12 @@ class CarEnv3:
         if action < len(self.STEER_ACTIONS):
             waypoint = self.map.get_waypoint(self.location)
             if action == 0:
-                if self.waypoint_left(waypoint):
+                if self.waypoint_left(waypoint) and self.lane_change_possible(waypoint, True, 3):
                     self.vehicle.set_transform(waypoint.get_left_lane().transform)
                 else:
                     self.wrong_action = True
             else:
-                if self.waypoint_right(waypoint):
+                if self.waypoint_right(waypoint) and self.lane_change_possible(waypoint, False, 3):
                     self.vehicle.set_transform(waypoint.get_right_lane().transform)
                 else:
                     self.wrong_action = True
@@ -244,8 +248,22 @@ class CarEnv3:
 
         return state
 
+    def lane_change_possible(self, waypoint, left, distance):
+        if left:
+            location = waypoint.get_left_lane().transform.location
+        else:
+            location = waypoint.get_right_lane().transform.location
+
+        vehicle_list = self.world.get_actors().filter("vehicle.*")
+
+        for vehicle in vehicle_list:
+            if abs(vehicle.get_location().x - location.x) < distance:
+                return False
+
+        return True
+
     def get_KPI(self):
-        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0, 0
+        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0 or self.wrong_action, 0
 
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)
@@ -277,9 +295,22 @@ class CarEnv3:
             return car_following.get_action(self.speed, -1, desired_velocity, -1)
 
     def shield(self, action_list):
-        if self.obstacle is not None:
-            closest_object_distance = self.calculate_distance(self.location, self.obstacle.other_actor.get_location())
+        for action in action_list:
+            waypoint = self.map.get_waypoint(self.location)
+            if action == 0:
+                if self.waypoint_left(waypoint) and self.lane_change_possible(waypoint, True, 6):
+                    return action
+            elif action == 1:
+                if self.waypoint_left(waypoint) and self.lane_change_possible(waypoint, True, 6):
+                    return action
+            else:
+                if self.obstacle is None:
+                    return action
 
-            return self.shield_object.shield(action_list, self.speed, closest_object_distance)
-        else:
-            return action_list[0]
+                closest_object_distance = self.calculate_distance(self.location,
+                                                                  self.obstacle.other_actor.get_location())
+
+                if self.shield_object.is_safe(action-2, self.speed, closest_object_distance):
+                    return action
+
+        return 2

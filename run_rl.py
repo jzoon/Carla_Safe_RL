@@ -7,14 +7,15 @@ from keras.models import load_model
 from parameters import *
 from CarEnv1 import *
 from CarEnv2 import *
+from CarEnv3 import *
 from tqdm import tqdm
 
 
-MODEL_PATHS = ["models/test_scenario1_____3.02max____1.71avg____0.73min__1612443723.model"]
+MODEL_PATHS = ["models/scenario3_long_____3.85max____1.87avg___-1.00min__1612825503.model"]
 EPISODES = 5
 
 if __name__ == "__main__":
-    env = CarEnv1()
+    env = CarEnv3()
 
     all_average_rewards = []
     all_average_collisions = []
