@@ -99,6 +99,7 @@ class DQNAgent:
             self.target_update_counter = 0
 
     def get_qs(self, state):
+        print(self.model.predict(state)[0])
         return self.model.predict(state)[0]
 
     def train_in_loop(self):

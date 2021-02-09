@@ -136,8 +136,8 @@ class CarEnv3:
         if len(vehicle_list) < 75:
             spawn_npc.main()
 
-        self.vehicle.set_transform(self.map.get_waypoint(
-            self.vehicle.get_transform().location).transform)
+        if self.transform.rotation.yaw != self.map.get_waypoint(self.location).transform.rotation.yaw:
+            self.vehicle.set_transform(self.map.get_waypoint(self.location).transform)
 
         return self.state, reward, done, action
 
@@ -257,7 +257,7 @@ class CarEnv3:
         vehicle_list = self.world.get_actors().filter("vehicle.*")
 
         for vehicle in vehicle_list:
-            if abs(vehicle.get_location().x - location.x) < distance:
+            if abs(vehicle.get_location().x - location.x) < distance and abs(vehicle.get_location().y - location.y) < 1:
                 return False
 
         return True
@@ -290,9 +290,19 @@ class CarEnv3:
             v = self.obstacle.other_actor.get_velocity()
             other_velocity = math.sqrt(v.x ** 2 + v.y ** 2)
 
-            return car_following.get_action(self.speed, self.obstacle.distance, desired_velocity, other_velocity)
+            action = car_following.get_action(self.speed, self.obstacle.distance, desired_velocity, other_velocity) + len(self.STEER_ACTIONS)
+
+            if self.speed < desired_velocity and action < 5:
+                waypoint = self.map.get_waypoint(self.location)
+
+                if self.waypoint_left(waypoint) and self.lane_change_possible(waypoint, True, self.obstacle.distance + 10):
+                    return 0
+                elif self.waypoint_right(waypoint) and self.lane_change_possible(waypoint, False, self.obstacle.distance + 10):
+                    return 1
+
+            return action
         else:
-            return car_following.get_action(self.speed, -1, desired_velocity, -1)
+            return car_following.get_action(self.speed, -1, desired_velocity, -1) + len(self.STEER_ACTIONS)
 
     def shield(self, action_list):
         for action in action_list:
@@ -310,7 +320,7 @@ class CarEnv3:
                 closest_object_distance = self.calculate_distance(self.location,
                                                                   self.obstacle.other_actor.get_location())
 
-                if self.shield_object.is_safe(action-2, self.speed, closest_object_distance):
+                if self.shield_object.is_safe(action - len(self.STEER_ACTIONS), self.speed, closest_object_distance):
                     return action
 
-        return 2
+        return len(self.STEER_ACTIONS)
