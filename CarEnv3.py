@@ -29,7 +29,6 @@ class CarEnv3:
 
     actor_list = []
     collision_hist = []
-    distance = 0
     previous_location = None
     speed = 0
     acceleration = 0
@@ -73,8 +72,6 @@ class CarEnv3:
                                                 carla.Rotation(pitch=-90)))
 
     def reset(self):
-        self.distance = 0
-        self.previous_location = None
         self.obstacle = None
         self.wrong_action = False
 
@@ -112,6 +109,7 @@ class CarEnv3:
         self.episode_start = time.time()
 
         self.update_parameters()
+        self.previous_location = self.location
 
         return self.state
 
@@ -128,8 +126,9 @@ class CarEnv3:
         time.sleep(ACTION_TO_STATE_TIME)
 
         self.update_parameters()
-        self.update_KPIs(self.location)
         reward, done = self.get_reward_and_done()
+
+        self.previous_location = self.location
 
         vehicle_list = self.world.get_actors().filter("vehicle.*")
 
@@ -199,9 +198,7 @@ class CarEnv3:
         if self.previous_location is None:
             self.previous_location = current_location
         else:
-            self.distance += self.calculate_distance(current_location, self.previous_location)
-
-        self.previous_location = current_location
+            self.previous_location = current_location
 
     def passed_destination(self, current_location, previous_location):
         up_x = max(current_location.x, previous_location.x) + 10
@@ -263,7 +260,7 @@ class CarEnv3:
         return True
 
     def get_KPI(self):
-        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0 or self.wrong_action, 0
+        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0 or self.wrong_action
 
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)

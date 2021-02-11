@@ -1,14 +1,11 @@
 from parameters import *
 import random
 import numpy as np
-import tensorflow as tf
-import keras.backend.tensorflow_backend as backend
 from DQNAgent import *
 from CarEnv1 import *
 from CarEnv2 import *
 from CarEnv3 import *
 from CarFollowing import *
-import os
 from threading import Thread
 from tqdm import tqdm
 
@@ -16,28 +13,23 @@ from tqdm import tqdm
 if __name__ == '__main__':
     epsilon = 1
     ep_rewards = []
-    colissions = []
+    collisions = []
     distances = []
-    wrong_locations = []
     times = []
+    shield_overrules = []
+    steps = []
 
     save_episodes = []
     save_rewards = []
     save_distances = []
     save_times = []
     save_collisions = []
+    save_overrules = []
 
     if SAVE_EXPERIENCES:
         file_name = r"experiences/" + MODEL_NAME + "_" + str(int(time.time())) + ".csv"
         f = open(file_name, "x")
         f.close()
-
-    #random.seed(1)
-    #np.random.seed(1)
-    #tf.set_random_seed(1)
-
-    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=MEMORY_FRACTION)
-    #backend.set_session(tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)))
 
     if ENVIRONMENT == 1:
         env = CarEnv1()
@@ -50,7 +42,7 @@ if __name__ == '__main__':
     car_follow = CarFollowing(env.ACC_ACTIONS)
 
     if INITIALIZE_REPLAY_MEMORY:
-        env.shield_object.initialize_replay_memory(INITIALIZE_REPLAY_SIZE, agent, env.ACC_ACTIONS)
+        env.shield_object.initialize_replay_memory(INITIALIZE_REPLAY_SIZE, agent, env.ACC_ACTIONS, env.STEER_ACTIONS, ENVIRONMENT)
 
     trainer_thread = Thread(target=agent.train_in_loop, daemon=True)
     trainer_thread.start()
@@ -59,18 +51,15 @@ if __name__ == '__main__':
     agent.get_qs(np.ones((1, env.STATE_LENGTH, env.STATE_WIDTH)))
 
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
-        env.collision_hist = []
         agent.tensorboard.step = episode
         episode_reward = 0
         step = 1
         current_state = env.reset()
         done = False
         episode_start = time.time()
-        previous_time = time.time()
+        shield_overrules_episode = 0
 
         while not done:
-            current_time = time.time()
-
             if np.random.random() > epsilon:
                 action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))[::-1]
             else:
@@ -84,11 +73,6 @@ if __name__ == '__main__':
                         action_list[index] = action_list[0]
                         action_list[0] = follow_action
 
-            time_spent = time.time() - previous_time
-            if time_spent < 1/FPS:
-                time.sleep(1/FPS - time_spent)
-                previous_time = time.time()
-
             new_state, reward, done, chosen_action = env.step(action_list)
 
             episode_reward += reward
@@ -96,6 +80,7 @@ if __name__ == '__main__':
 
             if chosen_action != action_list[0]:
                 agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, new_state, True))
+                shield_overrules_episode += 1
 
             if SAVE_EXPERIENCES:
                 f = open(file_name, "a")
@@ -109,34 +94,30 @@ if __name__ == '__main__':
             actor.destroy()
 
         distances.append(max(1, env.get_KPI()[0]))
-        colissions.append(int(env.get_KPI()[1]))
-        wrong_locations.append(int(env.get_KPI()[2]))
+        collisions.append(int(env.get_KPI()[1]))
         times.append(time.time() - episode_start)
-
         ep_rewards.append(episode_reward)
+        shield_overrules.append(shield_overrules_episode)
+        steps.append(step)
+
         if not episode % AGGREGATE_STATS_EVERY:
             average_reward = sum(ep_rewards[-AGGREGATE_STATS_EVERY:]) / len(ep_rewards[-AGGREGATE_STATS_EVERY:])
             min_reward = min(ep_rewards[-AGGREGATE_STATS_EVERY:])
             max_reward = max(ep_rewards[-AGGREGATE_STATS_EVERY:])
-            if sum(distances[-AGGREGATE_STATS_EVERY:]) > 0:
-                avg_colissions_per_m = sum(colissions[-AGGREGATE_STATS_EVERY:])/sum(distances[-AGGREGATE_STATS_EVERY:])
-                avg_left_road_per_m = sum(wrong_locations[-AGGREGATE_STATS_EVERY:]) / sum(
-                    distances[-AGGREGATE_STATS_EVERY:])
-            else:
-                avg_colissions_per_m = sum(colissions[-AGGREGATE_STATS_EVERY:])
-                avg_left_road_per_m = sum(wrong_locations[-AGGREGATE_STATS_EVERY:])
-
+            avg_collisions_per_m = sum(collisions[-AGGREGATE_STATS_EVERY:])/sum(distances[-AGGREGATE_STATS_EVERY:])
             avg_speed = sum(distances[-AGGREGATE_STATS_EVERY:])/sum(times[-AGGREGATE_STATS_EVERY:])
+            average_overrule = sum(shield_overrules[-AGGREGATE_STATS_EVERY:]) / sum(steps[-AGGREGATE_STATS_EVERY:])
 
             agent.tensorboard.update_stats(reward_avg=average_reward, reward_min=min_reward, reward_max=max_reward,
-                                           epsilon=epsilon, collisions_per_km=avg_colissions_per_m*1000,
-                                           left_road=avg_left_road_per_m*1000, speed=avg_speed)
+                                           epsilon=epsilon, collisions_per_km=avg_collisions_per_m*1000,
+                                           speed=avg_speed, shield_overrule_percentage=average_overrule)
 
             save_episodes.append(episode)
             save_rewards.append(average_reward)
             save_distances.append(sum(distances[-AGGREGATE_STATS_EVERY:])/len(distances[-AGGREGATE_STATS_EVERY:]))
             save_times.append(sum(times[-AGGREGATE_STATS_EVERY:])/len(times[-AGGREGATE_STATS_EVERY:]))
-            save_collisions.append(sum(colissions[-AGGREGATE_STATS_EVERY:])/len(colissions[-AGGREGATE_STATS_EVERY:]))
+            save_collisions.append(sum(collisions[-AGGREGATE_STATS_EVERY:])/len(collisions[-AGGREGATE_STATS_EVERY:]))
+            save_overrules.append(average_overrule)
 
         if epsilon > MIN_EPSILON:
             if EPSILON_DECAY_LINEAR:
@@ -145,9 +126,9 @@ if __name__ == '__main__':
                 epsilon *= EPSILON_DECAY
                 epsilon = max(MIN_EPSILON, epsilon)
 
-    all_data = np.array([save_episodes, save_distances, save_times, save_collisions, save_rewards]).transpose()
-    np.savetxt(r"manual_logs/" + MODEL_NAME + "_" + str(int(time.time())) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,reward", comments="")
+    all_data = np.array([save_episodes, save_distances, save_times, save_collisions, save_rewards, save_overrules]).transpose()
+    np.savetxt(r"manual_logs/" + MODEL_NAME + "-" + str(int(time.time())) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,reward,overrule", comments="")
 
     agent.terminate = True
     trainer_thread.join()
-    agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.model')
+    agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min-{int(time.time())}.model')

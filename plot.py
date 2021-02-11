@@ -4,46 +4,44 @@ from scipy.ndimage.filters import gaussian_filter1d
 import seaborn as sns
 import pandas as pd
 
-names = ["DDQN", "Shield", "SIP", "Both"]
+names = ["0", "200", "500"]
 
 def plot_rewards(all_data):
     for i, data in enumerate(all_data):
         sns.lineplot(x="episode", y="reward", data=data, label=names[i])
     plt.savefig("reward.png")
+    plt.show()
 
 
 def plot_collisions(all_data):
     for i, data in enumerate(all_data):
         sns.lineplot(x="episode", y="collisions per km", data=data, label=names[i])
     plt.savefig("col.png")
+    plt.show()
 
 
 def plot_speed(all_data):
     for i, data in enumerate(all_data):
         sns.lineplot(x="episode", y="speed", data=data, label=names[i])
     plt.savefig("speed.png")
+    plt.show()
 
 
-all_file_names = [["manual_logs/new_data_generation_1611858073.csv",
-                "manual_logs/new_data_generation_1611865669.csv",
-                "manual_logs/new_data_generation_1611872985.csv",
-                "manual_logs/new_data_generation_1611880164.csv",
-                "manual_logs/new_data_generation_1611887415.csv"],
-                ["manual_logs/shield_data_generation_1611916856.csv",
-                "manual_logs/shield_data_generation_1611926163.csv",
-                "manual_logs/shield_data_generation_1611935809.csv",
-                "manual_logs/shield_data_generation_1611945387.csv",
-                "manual_logs/shield_data_generation_1611955527.csv"],
-                ["manual_logs/policy_data_generation_1611964355.csv",
-                "manual_logs/policy_data_generation_1611971578.csv",
-                "manual_logs/policy_data_generation_1611980929.csv",
-                "manual_logs/policy_data_generation_1611990152.csv",
-                "manual_logs/policy_data_generation_1611998625.csv"],
-                ["manual_logs/both_data_generation_1612059650.csv",
-                "manual_logs/both_data_generation_1612069007.csv",
-                "manual_logs/both_data_generation_1612079122.csv",
-                "manual_logs/both_data_generation_1612088585.csv",
-                "manual_logs/both_data_generation_1612098663.csv"]]
+all_file_names = [["manual_logs/init_comp_0_1612867385.csv",
+                "manual_logs/init_comp_0_1612877029.csv",
+                "manual_logs/init_comp_0_1612886590.csv",
+                "manual_logs/init_comp_0_1612896029.csv",
+                "manual_logs/init_comp_0_1612906351.csv"],
+                ["manual_logs/init_comp_200_1612916744.csv",
+                "manual_logs/init_comp_200_1612929088.csv",
+                "manual_logs/init_comp_200_1612940060.csv",
+                "manual_logs/init_comp_200_1612950165.csv",
+                "manual_logs/init_comp_200_1612960467.csv"],
+                ["manual_logs/init_comp_500_1612976223.csv",
+                "manual_logs/init_comp_500_1612997826.csv",
+                "manual_logs/init_comp_500_1613008745.csv",
+                "manual_logs/init_comp_500_1613018553.csv",
+                "manual_logs/init_comp_500_1613028610.csv"]]
 
 all_data = []
 
@@ -66,6 +64,6 @@ for file_names in all_file_names:
 
     all_data.append(data)
 
-#plot_rewards(all_data)
-#plot_collisions(all_data)
+plot_rewards(all_data)
+plot_collisions(all_data)
 plot_speed(all_data)

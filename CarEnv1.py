@@ -5,6 +5,7 @@ import time
 import sys
 import glob
 import os
+from shield import *
 
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
@@ -19,7 +20,7 @@ import carla
 
 class CarEnv1:
     STATE_LENGTH = 1
-    STATE_WIDTH = 2
+    STATE_WIDTH = 1
 
     STEER_ACTIONS = [-0.5, 0.0, 0.5]
     ACC_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
@@ -28,7 +29,6 @@ class CarEnv1:
     actor_list = []
     collision_hist = []
     lane_hist = []
-    distance = 0
     previous_location = None
     speed = 0
     acceleration = 0
@@ -40,7 +40,6 @@ class CarEnv1:
     velocity = None
     transform = None
     obstacle = None
-    left_road = False
 
     def __init__(self):
         self.client = carla.Client('localhost', 2000)
@@ -62,19 +61,18 @@ class CarEnv1:
         self.start_transform = self.world.get_map().get_spawn_points()[64]
         self.destination = self.world.get_map().get_spawn_points()[184] # VERANDEREN ZODAT DE AUTO NIET BOTST
 
+        self.shield_object = shield(self.ACC_ACTIONS)
+
         spectator = self.world.get_spectator()
         spectator.set_transform(carla.Transform(self.start_transform.location + carla.Location(z=50),
                                                 carla.Rotation(pitch=-90)))
 
     def reset(self):
-        self.distance = 0
-        self.previous_location = None
         self.obstacle = None
 
         self.collision_hist = []
         self.actor_list = []
         self.lane_hist = []
-        self.left_road = False
         self.vehicle = None
 
         while self.vehicle is None:
@@ -101,6 +99,7 @@ class CarEnv1:
         self.episode_start = time.time()
 
         self.update_parameters()
+        self.previous_location = self.location
 
         return self.state
 
@@ -117,8 +116,8 @@ class CarEnv1:
         time.sleep(ACTION_TO_STATE_TIME)
 
         self.update_parameters()
-        self.update_KPIs(self.location)
         reward, done = self.get_reward_and_done()
+        self.previous_location = self.location
 
         return self.state, reward, done, action
 
@@ -163,14 +162,6 @@ class CarEnv1:
                 carla.VehicleControl(throttle=self.ACC_ACTIONS[acc_action], steer=self.STEER_ACTIONS[steer_action])
             )
 
-    def update_KPIs(self, current_location):
-        if self.previous_location is None:
-            self.previous_location = current_location
-        else:
-            self.distance += self.calculate_distance(current_location, self.previous_location)
-
-        self.previous_location = current_location
-
     def passed_destination(self, current_location, previous_location):
         up_x = max(current_location.x, previous_location.x) + 1
         down_x = min(current_location.x, previous_location.x) - 1
@@ -183,10 +174,10 @@ class CarEnv1:
         return False
 
     def get_state(self):
-        return [[self.transform.rotation.yaw, self.map.get_waypoint(self.location).transform.rotation.yaw]]
+        return [[self.speed]]
 
     def get_KPI(self):
-        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0, len(self.lane_hist) > 0
+        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0 or len(self.lane_hist) > 0
 
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)

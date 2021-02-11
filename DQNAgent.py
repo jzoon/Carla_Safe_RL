@@ -56,15 +56,15 @@ class DQNAgent:
         current_states = np.array([transition[0] for transition in minibatch], dtype=object)
 
         with self.graph.as_default():
-            current_qs_list = self.model.predict(current_states, PREDICTION_BATCH_SIZE)
+            current_qs_list = self.model.predict(current_states, MINIBATCH_SIZE)
 
         new_current_states = np.array([transition[3] for transition in minibatch])
 
         with self.graph.as_default():
-            future_qs_list_target = self.target_model.predict(new_current_states, PREDICTION_BATCH_SIZE)
+            future_qs_list_target = self.target_model.predict(new_current_states, MINIBATCH_SIZE)
 
         with self.graph.as_default():
-            future_qs_list_online = self.model.predict(new_current_states, PREDICTION_BATCH_SIZE)
+            future_qs_list_online = self.model.predict(new_current_states, MINIBATCH_SIZE)
 
         X = []
         y = []
@@ -89,7 +89,7 @@ class DQNAgent:
             self.last_log_episode = self.tensorboard.step
 
         with self.graph.as_default():
-            self.model.fit(np.array(X), np.array(y), batch_size=TRAINING_BATCH_SIZE, verbose=0, shuffle=False, callbacks=[self.tensorboard] if log_this_step else None)
+            self.model.fit(np.array(X), np.array(y), batch_size=MINIBATCH_SIZE, verbose=0, shuffle=False, callbacks=[self.tensorboard] if log_this_step else None)
 
         if log_this_step:
             self.target_update_counter += 1
@@ -99,7 +99,6 @@ class DQNAgent:
             self.target_update_counter = 0
 
     def get_qs(self, state):
-        print(self.model.predict(state)[0])
         return self.model.predict(state)[0]
 
     def train_in_loop(self):
