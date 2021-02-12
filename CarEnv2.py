@@ -147,6 +147,8 @@ class CarEnv2:
         reward = self.reward_simple()
 
         if self.passed_destination(self.location, self.previous_location):
+            reward += SIMPLE_REWARD_C
+
             return reward, True
 
         if len(self.collision_hist) != 0:

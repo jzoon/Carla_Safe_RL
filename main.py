@@ -51,6 +51,9 @@ if __name__ == '__main__':
     agent.get_qs(np.ones((1, env.STATE_LENGTH, env.STATE_WIDTH)))
 
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
+        if episode % UPDATE_TARGET_EVERY == 0:
+            agent.update_target_network()
+
         agent.tensorboard.step = episode
         episode_reward = 0
         step = 1
@@ -62,6 +65,10 @@ if __name__ == '__main__':
         while not done:
             if np.random.random() > epsilon:
                 action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))[::-1]
+
+                if episode % 5 == 0 and step == 3:
+                    print(agent.get_qs(np.expand_dims(current_state, axis=0)))
+                    print(current_state)
             else:
                 action_list = list(range(env.AMOUNT_OF_ACTIONS))
                 random.shuffle(action_list)

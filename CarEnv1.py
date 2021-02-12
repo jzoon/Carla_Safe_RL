@@ -20,7 +20,7 @@ import carla
 
 class CarEnv1:
     STATE_LENGTH = 1
-    STATE_WIDTH = 1
+    STATE_WIDTH = 2
 
     STEER_ACTIONS = [-0.5, 0.0, 0.5]
     ACC_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
@@ -132,6 +132,11 @@ class CarEnv1:
         reward = self.reward_simple()
 
         if self.passed_destination(self.location, self.previous_location) or self.episode_start + SECONDS_PER_EPISODE < time.time():
+            self.collision_hist = []
+            self.lane_hist = []
+
+            reward += SIMPLE_REWARD_C
+
             return reward, True
 
         if len(self.lane_hist) != 0:
@@ -174,7 +179,9 @@ class CarEnv1:
         return False
 
     def get_state(self):
-        return [[self.speed]]
+        rotation_difference = abs(self.transform.rotation.yaw - self.map.get_waypoint(self.location).transform.rotation.yaw)
+
+        return [[self.speed, rotation_difference]]
 
     def get_KPI(self):
         return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0 or len(self.lane_hist) > 0
