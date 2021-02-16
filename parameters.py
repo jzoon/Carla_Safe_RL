@@ -1,5 +1,5 @@
 # Simulation
-ENVIRONMENT = 1
+ENVIRONMENT = 2
 SECONDS_PER_EPISODE = 30
 EPISODES = 200
 
@@ -7,6 +7,7 @@ RENDERING = True
 OTHER_TRAFFIC = True
 SHIELD = False
 CAR_FOLLOWING = False
+NEW_SIP_VARIANT = True
 INITIALIZE_REPLAY_MEMORY = False
 
 SAVE_EXPERIENCES = False
@@ -52,5 +53,5 @@ ETA = 0.9
 AGGREGATE_STATS_EVERY = int(EPISODES/20)
 
 #MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIP" + str(int(CAR_FOLLOWING)) + "_Init" + str(int(INITIALIZE_REPLAY_MEMORY)) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
-MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
-#MODEL_NAME = "Final_scenario1_test"
+#MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
+MODEL_NAME = "regular_scenario_2"

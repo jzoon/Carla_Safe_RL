@@ -66,15 +66,29 @@ if __name__ == '__main__':
             if np.random.random() > epsilon:
                 action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))[::-1]
 
-                if episode % 5 == 0 and step == 3:
-                    print(agent.get_qs(np.expand_dims(current_state, axis=0)))
-                    print(current_state)
+                #if episode % 5 == 0 and step == 3:
+                #    print(agent.get_qs(np.expand_dims(current_state, axis=0)))
+                #    print(current_state)
             else:
                 action_list = list(range(env.AMOUNT_OF_ACTIONS))
                 random.shuffle(action_list)
 
                 if CAR_FOLLOWING:
-                    if np.random.random() < ETA:
+                    if NEW_SIP_VARIANT:
+                        if env.obstacle is not None:
+                            if env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < 15:
+                                follow_action = env.car_following(car_follow)
+                                index = action_list.index(follow_action)
+                                action_list[index] = action_list[0]
+                                action_list[0] = follow_action
+                            elif env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < 30:
+                                follow_action = env.car_following(car_follow)
+                                follow_action = random.choice([max(follow_action - 1, 0), follow_action, min(follow_action + 1, len(env.ACC_ACTIONS) - 1)])
+                                index = action_list.index(follow_action)
+                                action_list[index] = action_list[0]
+                                action_list[0] = follow_action
+
+                    elif np.random.random() < ETA:
                         follow_action = env.car_following(car_follow)
                         index = action_list.index(follow_action)
                         action_list[index] = action_list[0]

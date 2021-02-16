@@ -57,9 +57,10 @@ class CarEnv2:
         self.model_3 = self.blueprint_library.filter('model3')[0]
         self.model_3.set_attribute('color', '255,0,0')
 
-        self.start_transform = self.world.get_map().get_spawn_points()[64]
-        self.destination = self.world.get_map().get_spawn_points()[184]
-
+        self.start_transform = self.world.get_map().get_spawn_points()[2]
+        self.start_transform.location.x += 28
+        self.destination = self.world.get_map().get_spawn_points()[2]
+        self.destination.location.x -= 210
         spawn_npc.main()
 
         self.shield_object = shield(self.ACC_ACTIONS)
@@ -101,7 +102,7 @@ class CarEnv2:
             while self.calculate_distance(self.vehicle.get_location(), self.obstacle.other_actor.get_location()) < 15:
                 time.sleep(0.1)
 
-        velocity = carla.Vector3D(0, -INITIAL_SPEED, 0)
+        velocity = carla.Vector3D(-INITIAL_SPEED, 0, 0)
         self.vehicle.set_velocity(velocity)
         self.episode_start = time.time()
 
