@@ -6,8 +6,9 @@ EPISODES = 200
 RENDERING = True
 OTHER_TRAFFIC = True
 SHIELD = False
-CAR_FOLLOWING = False
+CAR_FOLLOWING = True
 NEW_SIP_VARIANT = True
+SIP_SHIELD = True
 INITIALIZE_REPLAY_MEMORY = False
 
 SAVE_EXPERIENCES = False
@@ -28,7 +29,7 @@ ACTION_TO_STATE_TIME = 1.5
 BUFFER_TIME = 2
 BUFFER_DISTANCE = 5
 
-INITIALIZE_REPLAY_SIZE = 50
+INITIALIZE_REPLAY_SIZE = 200
 
 # Q-learning
 REPLAY_MEMORY_SIZE = 50_000
@@ -50,8 +51,8 @@ EXPLORATION_STOP = 0.65
 ETA = 0.9
 
 # Other
-AGGREGATE_STATS_EVERY = int(EPISODES/20)
+AGGREGATE_STATS_EVERY = 10#25
 
 #MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIP" + str(int(CAR_FOLLOWING)) + "_Init" + str(int(INITIALIZE_REPLAY_MEMORY)) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
 #MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
-MODEL_NAME = "regular_scenario_2"
+MODEL_NAME = "new_SIP_with_shield_scenario_2"

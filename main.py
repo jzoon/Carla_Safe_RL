@@ -111,6 +111,10 @@ if __name__ == '__main__':
             current_state = new_state
             step += 1
 
+            if ENVIRONMENT == 2 and step < 3:
+                done = False
+                env.collision_hist = []
+
         for actor in env.actor_list:
             actor.destroy()
 

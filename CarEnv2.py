@@ -60,10 +60,11 @@ class CarEnv2:
         self.start_transform = self.world.get_map().get_spawn_points()[2]
         self.start_transform.location.x += 28
         self.destination = self.world.get_map().get_spawn_points()[2]
-        self.destination.location.x -= 210
+        self.destination.location.x -= 210 # CHANGE TO 200
         spawn_npc.main()
 
         self.shield_object = shield(self.ACC_ACTIONS)
+        self.car_following_object = CarFollowing(self.ACC_ACTIONS)
 
         spectator = self.world.get_spectator()
         spectator.set_transform(carla.Transform(self.start_transform.location + carla.Location(z=50),
@@ -116,6 +117,9 @@ class CarEnv2:
 
         if SHIELD:
             action = self.shield(action_list)
+        elif SIP_SHIELD:
+            action = self.sip_shield(action_list)
+            #print("Chosen action", action)
         else:
             action = action_list[0]
 
@@ -231,3 +235,22 @@ class CarEnv2:
             return self.shield_object.shield(action_list, self.speed, closest_object_distance)
         else:
             return action_list[0]
+
+    def sip_shield(self, action_list):
+        if self.obstacle is None:
+            return action_list[0]
+        #print()
+        #print("DDQN action", action_list[0])
+        sip_action = self.car_following(self.car_following_object)
+        closest_object_distance = self.calculate_distance(self.location, self.obstacle.other_actor.get_location())
+        #print("SIP action", sip_action)
+        #print(closest_object_distance)
+
+        if closest_object_distance < 40 and action_list[0] > sip_action:
+            return sip_action
+        elif closest_object_distance < 60 and action_list[0] > sip_action + 1:
+            for action in action_list:
+                if action <= sip_action + 1:
+                    return action
+
+        return action_list[0]
