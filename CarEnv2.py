@@ -65,12 +65,14 @@ class CarEnv2:
 
         self.shield_object = shield(self.ACC_ACTIONS)
         self.car_following_object = CarFollowing(self.ACC_ACTIONS)
+        self.vel_to_acc = VelToAcc(self.ACC_ACTIONS)
 
         spectator = self.world.get_spectator()
         spectator.set_transform(carla.Transform(self.start_transform.location + carla.Location(z=50),
                                                 carla.Rotation(pitch=-90)))
 
     def reset(self):
+        self.states = []
         self.previous_location = None
         self.obstacle = None
 
@@ -123,6 +125,8 @@ class CarEnv2:
         else:
             action = action_list[0]
 
+        self.states.append([action])
+
         self.car_control(action)
 
         time.sleep(ACTION_TO_STATE_TIME)
@@ -136,6 +140,8 @@ class CarEnv2:
 
         if len(vehicle_list) < 50:
             spawn_npc.main()
+
+        self.states.append(self.state)
 
         return self.state, reward, done, action
 
@@ -157,6 +163,7 @@ class CarEnv2:
             return reward, True
 
         if len(self.collision_hist) != 0:
+            print(self.states)
             done = True
             reward = -SIMPLE_REWARD_B
 
@@ -186,10 +193,10 @@ class CarEnv2:
             )
 
     def passed_destination(self, current_location, previous_location):
-        up_x = max(current_location.x, previous_location.x) + 1
-        down_x = min(current_location.x, previous_location.x) - 1
-        up_y = max(current_location.y, previous_location.y) + 1
-        down_y = min(current_location.y, previous_location.y) - 1
+        up_x = max(current_location.x, previous_location.x) + 10
+        down_x = min(current_location.x, previous_location.x) - 10
+        up_y = max(current_location.y, previous_location.y) + 10
+        down_y = min(current_location.y, previous_location.y) - 10
 
         if down_x < self.destination.location.x < up_x and down_y < self.destination.location.y < up_y:
             return True
@@ -246,11 +253,19 @@ class CarEnv2:
         #print("SIP action", sip_action)
         #print(closest_object_distance)
 
-        if closest_object_distance < 40 and action_list[0] > sip_action:
+        a, b = self.get_sip_limits()
+
+        if closest_object_distance < a and action_list[0] > sip_action:
             return sip_action
-        elif closest_object_distance < 60 and action_list[0] > sip_action + 1:
+        elif closest_object_distance < b and action_list[0] > sip_action + 1:
             for action in action_list:
                 if action <= sip_action + 1:
                     return action
 
         return action_list[0]
+
+    def get_sip_limits(self):
+        min_distance = self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, 2*(ACTION_TO_STATE_TIME+0.5))
+        max_distance = self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, 4*(ACTION_TO_STATE_TIME+0.5))
+
+        return min_distance, max_distance

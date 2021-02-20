@@ -76,12 +76,13 @@ if __name__ == '__main__':
                 if CAR_FOLLOWING:
                     if NEW_SIP_VARIANT:
                         if env.obstacle is not None:
-                            if env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < 15:
+                            a, b = env.get_sip_limits()
+                            if env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < a:
                                 follow_action = env.car_following(car_follow)
                                 index = action_list.index(follow_action)
                                 action_list[index] = action_list[0]
                                 action_list[0] = follow_action
-                            elif env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < 30:
+                            elif env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < b:
                                 follow_action = env.car_following(car_follow)
                                 follow_action = random.choice([max(follow_action - 1, 0), follow_action, min(follow_action + 1, len(env.ACC_ACTIONS) - 1)])
                                 index = action_list.index(follow_action)
@@ -111,15 +112,16 @@ if __name__ == '__main__':
             current_state = new_state
             step += 1
 
-            if ENVIRONMENT == 2 and step < 3:
-                done = False
-                env.collision_hist = []
+            env.get_sip_limits()
 
         for actor in env.actor_list:
             actor.destroy()
 
         distances.append(max(1, env.get_KPI()[0]))
-        collisions.append(int(env.get_KPI()[1]))
+        if ENVIRONMENT == 2 and step < 3:
+            collisions.append(0)
+        else:
+            collisions.append(int(env.get_KPI()[1]))
         times.append(time.time() - episode_start)
         ep_rewards.append(episode_reward)
         shield_overrules.append(shield_overrules_episode)

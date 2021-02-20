@@ -1,13 +1,13 @@
 # Simulation
 ENVIRONMENT = 2
 SECONDS_PER_EPISODE = 30
-EPISODES = 200
+EPISODES = 1000
 
 RENDERING = True
 OTHER_TRAFFIC = True
 SHIELD = False
-CAR_FOLLOWING = True
-NEW_SIP_VARIANT = True
+CAR_FOLLOWING = False
+NEW_SIP_VARIANT = False
 SIP_SHIELD = True
 INITIALIZE_REPLAY_MEMORY = False
 
@@ -27,7 +27,7 @@ ACTION_TO_STATE_TIME = 1.5
 
 # Shield
 BUFFER_TIME = 2
-BUFFER_DISTANCE = 5
+BUFFER_DISTANCE = 20
 
 INITIALIZE_REPLAY_SIZE = 200
 
@@ -51,8 +51,8 @@ EXPLORATION_STOP = 0.65
 ETA = 0.9
 
 # Other
-AGGREGATE_STATS_EVERY = 10#25
+AGGREGATE_STATS_EVERY = 50
 
 #MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIP" + str(int(CAR_FOLLOWING)) + "_Init" + str(int(INITIALIZE_REPLAY_MEMORY)) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
 #MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
-MODEL_NAME = "new_SIP_with_shield_scenario_2"
+MODEL_NAME = "long_test_SIP_shield"
