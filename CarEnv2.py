@@ -60,7 +60,8 @@ class CarEnv2:
         self.start_transform = self.world.get_map().get_spawn_points()[2]
         self.start_transform.location.x += 28
         self.destination = self.world.get_map().get_spawn_points()[2]
-        self.destination.location.x -= 210 # CHANGE TO 200
+        self.destination.location.x -= 200 # CHANGE TO 200
+        self.destination_distance = 200
         spawn_npc.main()
 
         self.shield_object = shield(self.ACC_ACTIONS)
@@ -72,6 +73,7 @@ class CarEnv2:
                                                 carla.Rotation(pitch=-90)))
 
     def reset(self):
+        self.collision = False
         self.states = []
         self.previous_location = None
         self.obstacle = None
@@ -157,13 +159,14 @@ class CarEnv2:
 
         reward = self.reward_simple()
 
-        if self.passed_destination(self.location, self.previous_location):
+        if self.passed_destination():
             reward += SIMPLE_REWARD_C
 
             return reward, True
 
         if len(self.collision_hist) != 0:
             print(self.states)
+            self.collision = True
             done = True
             reward = -SIMPLE_REWARD_B
 
@@ -192,13 +195,8 @@ class CarEnv2:
                 carla.VehicleControl(throttle=self.ACC_ACTIONS[acc_action], steer=self.STEER_ACTIONS[steer_action])
             )
 
-    def passed_destination(self, current_location, previous_location):
-        up_x = max(current_location.x, previous_location.x) + 10
-        down_x = min(current_location.x, previous_location.x) - 10
-        up_y = max(current_location.y, previous_location.y) + 10
-        down_y = min(current_location.y, previous_location.y) - 10
-
-        if down_x < self.destination.location.x < up_x and down_y < self.destination.location.y < up_y:
+    def passed_destination(self):
+        if self.calculate_distance(self.location, self.start_transform.location) > self.destination_distance:
             return True
 
         return False
@@ -216,7 +214,7 @@ class CarEnv2:
         return [[self.speed, distance, other_speed]]
 
     def get_KPI(self):
-        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0
+        return self.calculate_distance(self.location, self.start_transform.location), self.collision
 
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)

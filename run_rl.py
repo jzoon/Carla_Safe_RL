@@ -11,11 +11,11 @@ from CarEnv3 import *
 from tqdm import tqdm
 
 
-MODEL_PATHS = ["models/scenario3_long_____3.85max____1.87avg___-1.00min__1612825503.model"]
-EPISODES = 5
+MODEL_PATHS = ["models/1000_test_____6.41max____3.70avg___-1.00min-1613762389.model"]
+EPISODES = 100
 
 if __name__ == "__main__":
-    env = CarEnv3()
+    env = CarEnv2()
 
     all_average_rewards = []
     all_average_collisions = []
@@ -44,8 +44,6 @@ if __name__ == "__main__":
                 qs = model.predict(np.expand_dims(current_state, axis=0))[0]
                 action = np.argsort(qs)[::-1]
 
-                print(qs)
-
                 new_state, reward, done, _ = env.step(action)
                 episode_reward += reward
                 current_state = new_state
@@ -58,9 +56,12 @@ if __name__ == "__main__":
                 #print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
 
             all_times.append(time.time() - start_time)
-            distance, col, _ = env.get_KPI()
+            distance, col = env.get_KPI()
             all_distances.append(distance)
-            all_collisions.append(col)
+            if step > 1:
+                all_collisions.append(col)
+            else:
+                all_collisions.append(0)
             all_rewards.append(episode_reward)
 
             for actor in env.actor_list:
