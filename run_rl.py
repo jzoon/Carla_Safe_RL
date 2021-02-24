@@ -10,9 +10,11 @@ from CarEnv2 import *
 from CarEnv3 import *
 from tqdm import tqdm
 
+TEST_POLICY = False
+RANDOM = False
 
-MODEL_PATHS = ["models/1000_test_____6.41max____3.70avg___-1.00min-1613762389.model"]
-EPISODES = 100
+MODEL_PATHS = ["models/test_no_carla.model"]
+EPISODES = 50
 
 if __name__ == "__main__":
     env = CarEnv2()
@@ -41,8 +43,16 @@ if __name__ == "__main__":
             while True:
                 step += 1
                 step_start = time.time()
-                qs = model.predict(np.expand_dims(current_state, axis=0))[0]
-                action = np.argsort(qs)[::-1]
+
+                if TEST_POLICY:
+                    action = [env.car_following()]
+                elif RANDOM:
+                    action = [random.randint(0, 4)]
+                else:
+                    qs = model.predict(np.expand_dims(current_state, axis=0))[0]
+                    action = np.argsort(qs)[::-1]
+
+                    print(qs)
 
                 new_state, reward, done, _ = env.step(action)
                 episode_reward += reward

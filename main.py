@@ -39,7 +39,6 @@ if __name__ == '__main__':
         env = CarEnv3()
 
     agent = DQNAgent(env.STATE_LENGTH, env.STATE_WIDTH, env.AMOUNT_OF_ACTIONS)
-    car_follow = CarFollowing(env.ACC_ACTIONS)
 
     if INITIALIZE_REPLAY_MEMORY:
         env.shield_object.initialize_replay_memory(INITIALIZE_REPLAY_SIZE, agent, env.ACC_ACTIONS, env.STEER_ACTIONS, ENVIRONMENT)
@@ -78,19 +77,19 @@ if __name__ == '__main__':
                         if env.obstacle is not None:
                             a, b = env.get_sip_limits()
                             if env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < a:
-                                follow_action = env.car_following(car_follow)
+                                follow_action = env.car_following()
                                 index = action_list.index(follow_action)
                                 action_list[index] = action_list[0]
                                 action_list[0] = follow_action
                             elif env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < b:
-                                follow_action = env.car_following(car_follow)
+                                follow_action = env.car_following()
                                 follow_action = random.choice([max(follow_action - 1, 0), follow_action, min(follow_action + 1, len(env.ACC_ACTIONS) - 1)])
                                 index = action_list.index(follow_action)
                                 action_list[index] = action_list[0]
                                 action_list[0] = follow_action
 
                     elif np.random.random() < ETA:
-                        follow_action = env.car_following(car_follow)
+                        follow_action = env.car_following()
                         index = action_list.index(follow_action)
                         action_list[index] = action_list[0]
                         action_list[0] = follow_action
@@ -154,7 +153,7 @@ if __name__ == '__main__':
                 epsilon = max(MIN_EPSILON, epsilon)
 
     all_data = np.array([save_episodes, save_distances, save_times, save_collisions, save_rewards, save_overrules]).transpose()
-    np.savetxt(r"manual_logs/" + MODEL_NAME + "-" + str(int(time.time())) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,reward,overrule", comments="")
+    np.savetxt(r"manual_logs/" + MODEL_NAME + "-" + str(int(time.time())) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,return,overrule", comments="")
 
     agent.terminate = True
     trainer_thread.join()

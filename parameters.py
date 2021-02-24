@@ -8,7 +8,7 @@ OTHER_TRAFFIC = True
 SHIELD = False
 CAR_FOLLOWING = False
 NEW_SIP_VARIANT = False
-SIP_SHIELD = True
+SIP_SHIELD = False
 INITIALIZE_REPLAY_MEMORY = False
 
 SAVE_EXPERIENCES = False
@@ -55,4 +55,4 @@ AGGREGATE_STATS_EVERY = 50
 
 #MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIP" + str(int(CAR_FOLLOWING)) + "_Init" + str(int(INITIALIZE_REPLAY_MEMORY)) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
 #MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
-MODEL_NAME = "long_test_SIP_shield"
+MODEL_NAME = "testtest"

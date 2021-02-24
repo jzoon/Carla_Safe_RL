@@ -66,3 +66,7 @@ class shield:
             if not self.is_safe(action, speed, distance):
                 agent.update_replay_memory(([[speed, distance, other_speed]], action, -SIMPLE_REWARD_B, [[speed, distance, other_speed]], True))
                 added += 1
+            else:
+                agent.update_replay_memory(([[speed, distance, other_speed]], action, SIMPLE_REWARD_B,
+                                            [[speed, distance, other_speed]], True))
+                added += 1

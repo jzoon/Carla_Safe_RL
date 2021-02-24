@@ -134,6 +134,10 @@ class CarEnv2:
         time.sleep(ACTION_TO_STATE_TIME)
 
         self.update_parameters()
+
+        if self.transform.rotation.yaw != self.map.get_waypoint(self.location).transform.rotation.yaw:
+            self.vehicle.set_transform(self.map.get_waypoint(self.location).transform)
+
         reward, done = self.get_reward_and_done()
 
         self.previous_location = self.location
@@ -222,16 +226,16 @@ class CarEnv2:
     def append_obstacle(self, event):
         self.obstacle = event
 
-    def car_following(self, car_following):
+    def car_following(self):
         desired_velocity = self.vehicle.get_speed_limit() * 0.95
 
         if self.obstacle is not None:
             v = self.obstacle.other_actor.get_velocity()
             other_velocity = math.sqrt(v.x ** 2 + v.y ** 2)
 
-            return car_following.get_action(self.speed, self.obstacle.distance, desired_velocity, other_velocity)
+            return self.car_following_object.get_action(self.speed, self.obstacle.distance, desired_velocity, other_velocity)
         else:
-            return car_following.get_action(self.speed, -1, desired_velocity, -1)
+            return self.car_following_object.get_action(self.speed, -1, desired_velocity, -1)
 
     def shield(self, action_list):
         if self.obstacle is not None:
@@ -246,7 +250,7 @@ class CarEnv2:
             return action_list[0]
         #print()
         #print("DDQN action", action_list[0])
-        sip_action = self.car_following(self.car_following_object)
+        sip_action = self.car_following()
         closest_object_distance = self.calculate_distance(self.location, self.obstacle.other_actor.get_location())
         #print("SIP action", sip_action)
         #print(closest_object_distance)
