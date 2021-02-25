@@ -9,12 +9,14 @@ from CarEnv1 import *
 from CarEnv2 import *
 from CarEnv3 import *
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
-TEST_POLICY = False
+PLOT_BEHAVIOR = False
+TEST_POLICY = True
 RANDOM = False
 
-MODEL_PATHS = ["models/test_no_carla.model"]
-EPISODES = 50
+MODEL_PATHS = ["models/super_safe_policy_shield_1000_____6.23max____3.48avg____1.79min-1614211774.model"]
+EPISODES = 100
 
 if __name__ == "__main__":
     env = CarEnv2()
@@ -40,6 +42,10 @@ if __name__ == "__main__":
             start_time = time.time()
             episode_reward = 0
 
+            own_speed = []
+            other_speed = []
+            obstacle_distance = []
+
             while True:
                 step += 1
                 step_start = time.time()
@@ -52,7 +58,7 @@ if __name__ == "__main__":
                     qs = model.predict(np.expand_dims(current_state, axis=0))[0]
                     action = np.argsort(qs)[::-1]
 
-                    print(qs)
+                    #print(qs)
 
                 new_state, reward, done, _ = env.step(action)
                 episode_reward += reward
@@ -65,6 +71,12 @@ if __name__ == "__main__":
                 fps_counter.append(frame_time)
                 #print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
 
+                if PLOT_BEHAVIOR:
+                    own_speed.append(env.speed)
+                    obstacle_vel = env.obstacle.other_actor.get_velocity()
+                    other_speed.append(math.sqrt(obstacle_vel.x ** 2 + obstacle_vel.y ** 2 + obstacle_vel.z ** 2))
+                    obstacle_distance.append(env.calculate_distance(env.location, env.obstacle.other_actor.get_location()))
+
             all_times.append(time.time() - start_time)
             distance, col = env.get_KPI()
             all_distances.append(distance)
@@ -76,6 +88,14 @@ if __name__ == "__main__":
 
             for actor in env.actor_list:
                 actor.destroy()
+
+            if PLOT_BEHAVIOR:
+                ax1 = plt.plot(list(range(step-1)), own_speed, label="Speed AV (m/s)")
+                ax2 = plt.plot(list(range(step-1)), other_speed, label="Speed front vehicle (m/s)")
+                ax3 = plt.plot(list(range(step - 1)), obstacle_distance, label="Distance (m)")
+                plt.legend()
+                plt.savefig("tempplots/" + str(episode))
+                plt.show()
 
         print()
         print(MODEL_PATH)

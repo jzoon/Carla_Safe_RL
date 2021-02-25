@@ -10,6 +10,10 @@ class CarFollowing:
     a = 3
     b = 8
 
+    if SUPER:
+        T = 4
+        d_0 = 30
+
     def __init__(self, acc_actions):
         self.acc_actions = acc_actions
         self.vel_to_acc = VelToAcc(acc_actions)

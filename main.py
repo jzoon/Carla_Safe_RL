@@ -40,9 +40,6 @@ if __name__ == '__main__':
 
     agent = DQNAgent(env.STATE_LENGTH, env.STATE_WIDTH, env.AMOUNT_OF_ACTIONS)
 
-    if INITIALIZE_REPLAY_MEMORY:
-        env.shield_object.initialize_replay_memory(INITIALIZE_REPLAY_SIZE, agent, env.ACC_ACTIONS, env.STEER_ACTIONS, ENVIRONMENT)
-
     trainer_thread = Thread(target=agent.train_in_loop, daemon=True)
     trainer_thread.start()
     while not agent.training_initialized:
@@ -72,28 +69,6 @@ if __name__ == '__main__':
                 action_list = list(range(env.AMOUNT_OF_ACTIONS))
                 random.shuffle(action_list)
 
-                if CAR_FOLLOWING:
-                    if NEW_SIP_VARIANT:
-                        if env.obstacle is not None:
-                            a, b = env.get_sip_limits()
-                            if env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < a:
-                                follow_action = env.car_following()
-                                index = action_list.index(follow_action)
-                                action_list[index] = action_list[0]
-                                action_list[0] = follow_action
-                            elif env.calculate_distance(env.location, env.obstacle.other_actor.get_location()) < b:
-                                follow_action = env.car_following()
-                                follow_action = random.choice([max(follow_action - 1, 0), follow_action, min(follow_action + 1, len(env.ACC_ACTIONS) - 1)])
-                                index = action_list.index(follow_action)
-                                action_list[index] = action_list[0]
-                                action_list[0] = follow_action
-
-                    elif np.random.random() < ETA:
-                        follow_action = env.car_following()
-                        index = action_list.index(follow_action)
-                        action_list[index] = action_list[0]
-                        action_list[0] = follow_action
-
             new_state, reward, done, chosen_action = env.step(action_list)
 
             episode_reward += reward
@@ -110,8 +85,6 @@ if __name__ == '__main__':
 
             current_state = new_state
             step += 1
-
-            env.get_sip_limits()
 
         for actor in env.actor_list:
             actor.destroy()
