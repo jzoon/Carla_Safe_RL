@@ -75,8 +75,19 @@ if __name__ == '__main__':
             agent.update_replay_memory((current_state, chosen_action, reward, new_state, done))
 
             if chosen_action != action_list[0]:
-                agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, new_state, True))
+                if VARIABLE_REWARD:
+                    difference = env.action_SIP_difference
+                    agent.update_replay_memory((current_state, action_list[0], -difference/len(env.ACC_ACTIONS), current_state, True))
+                    print((current_state, action_list[0], -difference/len(env.ACC_ACTIONS), new_state, True))
+                else:
+                    agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, current_state, True))
+
+
                 shield_overrules_episode += 1
+                if episode/EPISODES > 0.9:
+                    print("Agent action: " + str(action_list[0]))
+                    print("Chosen action: " + str(chosen_action))
+                    print(env.states)
 
             if SAVE_EXPERIENCES:
                 f = open(file_name, "a")

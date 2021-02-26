@@ -39,6 +39,7 @@ class CarEnv2:
     velocity = None
     transform = None
     obstacle = None
+    action_SIP_difference = 0
 
     def __init__(self):
         self.client = carla.Client('localhost', 2000)
@@ -227,7 +228,7 @@ class CarEnv2:
         self.obstacle = event
 
     def car_following(self):
-        desired_velocity = self.vehicle.get_speed_limit() * DESIRED_SPEED
+        desired_velocity = self.vehicle.get_speed_limit() * 0.95
 
         if self.obstacle is not None:
             v = self.obstacle.other_actor.get_velocity()
@@ -263,6 +264,8 @@ class CarEnv2:
                 #print(allowed_actions)
                 for action in action_list:
                     if action in allowed_actions:
+                        if action != action_list[0]:
+                            self.action_SIP_difference = action_list[0] - allowed_actions[-1]
                         #print(action)
                         return action
 

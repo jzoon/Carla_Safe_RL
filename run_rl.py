@@ -11,7 +11,7 @@ from CarEnv3 import *
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-PLOT_BEHAVIOR = True
+PLOT_BEHAVIOR = False
 TEST_POLICY = True
 RANDOM = False
 
@@ -52,7 +52,6 @@ if __name__ == "__main__":
 
                 if TEST_POLICY:
                     action = [env.car_following()]
-                    print(action)
                 elif RANDOM:
                     action = [random.randint(0, 4)]
                 else:
