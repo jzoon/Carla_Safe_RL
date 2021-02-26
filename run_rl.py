@@ -11,11 +11,11 @@ from CarEnv3 import *
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-PLOT_BEHAVIOR = False
+PLOT_BEHAVIOR = True
 TEST_POLICY = True
 RANDOM = False
 
-MODEL_PATHS = ["models/super_safe_policy_shield_1000_____6.23max____3.48avg____1.79min-1614211774.model"]
+MODEL_PATHS = ["models/SIP_shield_test_more_actions_____4.27max____2.91avg___-1.00min-1614313374.model"]
 EPISODES = 100
 
 if __name__ == "__main__":
@@ -52,6 +52,7 @@ if __name__ == "__main__":
 
                 if TEST_POLICY:
                     action = [env.car_following()]
+                    print(action)
                 elif RANDOM:
                     action = [random.randint(0, 4)]
                 else:

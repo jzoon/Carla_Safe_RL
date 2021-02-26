@@ -1,12 +1,11 @@
 # Simulation
 ENVIRONMENT = 2
 SECONDS_PER_EPISODE = 30
-EPISODES = 100
+EPISODES = 200
 
 RENDERING = True
 SHIELD = False
-SIP_SHIELD = False
-SUPER = True
+SIP_SHIELD = True
 
 SAVE_EXPERIENCES = False
 INITIAL_SPEED = 7
@@ -25,6 +24,9 @@ ACTION_TO_STATE_TIME = 1.5
 # Shield
 BUFFER_TIME = 2
 BUFFER_DISTANCE = 20
+
+# SIP Shield
+DESIRED_SPEED = 0.5
 
 # Q-learning
 REPLAY_MEMORY_SIZE = 50_000
@@ -48,4 +50,4 @@ AGGREGATE_STATS_EVERY = 50
 
 #MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIP" + str(int(CAR_FOLLOWING)) + "_Init" + str(int(INITIALIZE_REPLAY_MEMORY)) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
 #MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_lr" + str(LEARNING_RATE) + "_discount" + str(DISCOUNT)
-MODEL_NAME = "testtest"
+MODEL_NAME = "test_new_SIP_shield"

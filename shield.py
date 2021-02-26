@@ -34,39 +34,3 @@ class shield:
             speed = self.vel_to_acc.get_speed(0, speed, ACTION_TO_STATE_TIME)
 
         return meters + BUFFER_DISTANCE
-
-    def initialize_replay_memory(self, amount, agent, acc_actions, steer_actions, env):
-        if env == 1:
-            self.initialize_replay_memory_1(amount, agent, acc_actions, steer_actions)
-        elif env == 2:
-            self.initialize_replay_memory_2(amount, agent, acc_actions)
-        else:
-            self.initialize_replay_memory_3(amount, agent, acc_actions)
-
-    def initialize_replay_memory_1(self, amount, agent, acc_actions, steer_actions):
-        added = 0
-
-        while added < amount:
-            action = random.randint(0, len(acc_actions) * len(steer_actions) - 1)
-            speed = random.uniform(0.0, 25.0)
-
-            if not steer_actions[int(action / len(acc_actions))] == 0.0:
-                agent.update_replay_memory(([[speed]], action, -SIMPLE_REWARD_B, [[speed]], True))
-                added += 1
-
-    def initialize_replay_memory_2(self, amount, agent, acc_actions):
-        added = 0
-
-        while added < amount:
-            speed = random.uniform(0.0, 25.0)
-            distance = random.uniform(0.0, 160.0)
-            other_speed = random.uniform(0.0, 25.0)
-            action = random.randint(1, len(acc_actions) - 1)
-
-            if not self.is_safe(action, speed, distance):
-                agent.update_replay_memory(([[speed, distance, other_speed]], action, -SIMPLE_REWARD_B, [[speed, distance, other_speed]], True))
-                added += 1
-            else:
-                agent.update_replay_memory(([[speed, distance, other_speed]], action, SIMPLE_REWARD_B,
-                                            [[speed, distance, other_speed]], True))
-                added += 1

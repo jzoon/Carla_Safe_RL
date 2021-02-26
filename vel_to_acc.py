@@ -41,8 +41,8 @@ class VelToAcc:
     def get_speed(self, action, velocity, time):
         acc = self.get_acc(action, velocity)
         new_vel = max(0, (velocity + (velocity + (acc * time))) / 2)
-        if action > 2:
-            new_vel += 0.35
+        if action > 6:
+            new_vel += 0.45
 
         return new_vel
 

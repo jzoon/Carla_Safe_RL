@@ -24,8 +24,8 @@ class CarEnv2:
     STATE_WIDTH = 3
 
     STEER_ACTIONS = [0]
-    ACC_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
-    AMOUNT_OF_ACTIONS = 5
+    ACC_ACTIONS = [-1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    AMOUNT_OF_ACTIONS = 11
 
     actor_list = []
     collision_hist = []
@@ -227,7 +227,7 @@ class CarEnv2:
         self.obstacle = event
 
     def car_following(self):
-        desired_velocity = self.vehicle.get_speed_limit() * 0.95
+        desired_velocity = self.vehicle.get_speed_limit() * DESIRED_SPEED
 
         if self.obstacle is not None:
             v = self.obstacle.other_actor.get_velocity()
@@ -255,19 +255,23 @@ class CarEnv2:
         #print("SIP action", sip_action)
         #print(closest_object_distance)
 
-        a, b = self.get_sip_limits()
+        sip_limits = self.get_sip_limits()
 
-        if closest_object_distance < a and action_list[0] > sip_action:
-            return sip_action
-        elif closest_object_distance < b and action_list[0] > sip_action + 1:
-            for action in action_list:
-                if action <= sip_action + 1:
-                    return action
+        for i, limit in enumerate(sip_limits):
+            if closest_object_distance < limit:
+                allowed_actions = list(range(0, min(sip_action + 1 + i, len(self.ACC_ACTIONS) + 1)))
+                #print(allowed_actions)
+                for action in action_list:
+                    if action in allowed_actions:
+                        #print(action)
+                        return action
 
         return action_list[0]
 
     def get_sip_limits(self):
-        min_distance = self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, 2*(ACTION_TO_STATE_TIME+0.5))
-        max_distance = self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, 4*(ACTION_TO_STATE_TIME+0.5))
+        sip_limits = []
 
-        return min_distance, max_distance
+        for i in range(1, 5):
+            sip_limits.append(self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, i*(ACTION_TO_STATE_TIME+0.5)))
+
+        return sip_limits
