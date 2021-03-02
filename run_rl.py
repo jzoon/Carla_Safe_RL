@@ -11,12 +11,12 @@ from CarEnv3 import *
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-PLOT_BEHAVIOR = False
-TEST_POLICY = True
+PLOT_BEHAVIOR = True
+TEST_POLICY = False
 RANDOM = False
 
-MODEL_PATHS = ["models/SIP_shield_test_more_actions_____4.27max____2.91avg___-1.00min-1614313374.model"]
-EPISODES = 100
+MODEL_PATHS = ["models/SIP_shield_test_more_actions_variable_reward_____6.47max____4.03avg___-1.00min-1614555234.model"]
+EPISODES = 5
 
 if __name__ == "__main__":
     env = CarEnv2()
@@ -53,12 +53,12 @@ if __name__ == "__main__":
                 if TEST_POLICY:
                     action = [env.car_following()]
                 elif RANDOM:
-                    action = [random.randint(0, 4)]
+                    action = [random.randint(0, len(env.ACC_ACTIONS) - 1)]
                 else:
                     qs = model.predict(np.expand_dims(current_state, axis=0))[0]
                     action = np.argsort(qs)[::-1]
+                    print(qs)
 
-                    #print(qs)
 
                 new_state, reward, done, _ = env.step(action)
                 episode_reward += reward

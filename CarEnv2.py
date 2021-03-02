@@ -23,15 +23,13 @@ class CarEnv2:
     STATE_LENGTH = 1
     STATE_WIDTH = 3
 
-    STEER_ACTIONS = [0]
     ACC_ACTIONS = [-1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-    AMOUNT_OF_ACTIONS = 11
+    AMOUNT_OF_ACTIONS = len(ACC_ACTIONS)
 
     actor_list = []
     collision_hist = []
     previous_location = None
     speed = 0
-    acceleration = 0
     colsensor = None
     episode_start = 0
     state = None
@@ -39,6 +37,7 @@ class CarEnv2:
     velocity = None
     transform = None
     obstacle = None
+    collision = False
     action_SIP_difference = 0
 
     def __init__(self):
@@ -60,8 +59,6 @@ class CarEnv2:
 
         self.start_transform = self.world.get_map().get_spawn_points()[2]
         self.start_transform.location.x += 28
-        self.destination = self.world.get_map().get_spawn_points()[2]
-        self.destination.location.x -= 200 # CHANGE TO 200
         self.destination_distance = 200
         spawn_npc.main()
 
@@ -75,10 +72,8 @@ class CarEnv2:
 
     def reset(self):
         self.collision = False
-        self.states = []
         self.previous_location = None
         self.obstacle = None
-
         self.collision_hist = []
         self.actor_list = []
         self.vehicle = None
@@ -124,11 +119,8 @@ class CarEnv2:
             action = self.shield(action_list)
         elif SIP_SHIELD:
             action = self.sip_shield(action_list)
-            #print("Chosen action", action)
         else:
             action = action_list[0]
-
-        self.states.append([action])
 
         self.car_control(action)
 
@@ -140,15 +132,7 @@ class CarEnv2:
             self.vehicle.set_transform(self.map.get_waypoint(self.location).transform)
 
         reward, done = self.get_reward_and_done()
-
         self.previous_location = self.location
-
-        vehicle_list = self.world.get_actors().filter("vehicle.*")
-
-        if len(vehicle_list) < 50:
-            spawn_npc.main()
-
-        self.states.append(self.state)
 
         return self.state, reward, done, action
 
@@ -160,25 +144,20 @@ class CarEnv2:
         self.state = self.get_state()
 
     def get_reward_and_done(self):
-        done = False
-
         reward = self.reward_simple()
 
         if self.passed_destination():
-            reward += SIMPLE_REWARD_C
-
-            return reward, True
+            return SIMPLE_REWARD_C, True
 
         if len(self.collision_hist) != 0:
-            print(self.states)
             self.collision = True
-            done = True
-            reward = -SIMPLE_REWARD_B
+
+            return -SIMPLE_REWARD_B, True
 
         if self.episode_start + SECONDS_PER_EPISODE < time.time():
-            done = True
+            return reward, True
 
-        return reward, done
+        return reward, False
 
     def reward_simple(self):
         v_max = self.vehicle.get_speed_limit()
@@ -188,16 +167,13 @@ class CarEnv2:
         return SIMPLE_REWARD_A * (self.speed / v_max)
 
     def car_control(self, action):
-        steer_action = int(action / len(self.ACC_ACTIONS))
-        acc_action = action % len(self.ACC_ACTIONS)
-
-        if self.ACC_ACTIONS[acc_action] < 0:
+        if self.ACC_ACTIONS[action] < 0:
             self.vehicle.apply_control(
-                carla.VehicleControl(brake=-self.ACC_ACTIONS[acc_action], steer=self.STEER_ACTIONS[steer_action])
+                carla.VehicleControl(brake=-self.ACC_ACTIONS[action])
             )
         else:
             self.vehicle.apply_control(
-                carla.VehicleControl(throttle=self.ACC_ACTIONS[acc_action], steer=self.STEER_ACTIONS[steer_action])
+                carla.VehicleControl(throttle=self.ACC_ACTIONS[action])
             )
 
     def passed_destination(self):
@@ -249,24 +225,20 @@ class CarEnv2:
     def sip_shield(self, action_list):
         if self.obstacle is None:
             return action_list[0]
-        #print()
-        #print("DDQN action", action_list[0])
+
         sip_action = self.car_following()
         closest_object_distance = self.calculate_distance(self.location, self.obstacle.other_actor.get_location())
-        #print("SIP action", sip_action)
-        #print(closest_object_distance)
-
         sip_limits = self.get_sip_limits()
 
         for i, limit in enumerate(sip_limits):
             if closest_object_distance < limit:
-                allowed_actions = list(range(0, min(sip_action + 1 + i, len(self.ACC_ACTIONS) + 1)))
-                #print(allowed_actions)
+                allowed_actions = list(range(0, min(sip_action + 1 + (i * SIP_WIDTH), len(self.ACC_ACTIONS) + 1)))
+
                 for action in action_list:
                     if action in allowed_actions:
                         if action != action_list[0]:
                             self.action_SIP_difference = action_list[0] - allowed_actions[-1]
-                        #print(action)
+
                         return action
 
         return action_list[0]

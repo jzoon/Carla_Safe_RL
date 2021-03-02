@@ -14,6 +14,7 @@ class VelToAcc:
     def read_file(self, filename):
         vel = []
         acc = []
+
         with open("vel_acc_data/data_" + filename + ".txt", "r") as file:
             switch = False
             for line in file:

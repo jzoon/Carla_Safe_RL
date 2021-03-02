@@ -4,7 +4,7 @@ from scipy.ndimage.filters import gaussian_filter1d
 import seaborn as sns
 import pandas as pd
 
-names = ["DDQN", "Shield", "SIP Shield"]
+names = ["DDQN", "Shield", "SIP Shield", "SSIP Shield", "SIP Shield variable punishment", "SSIP Shield variable punishment"]
 
 def plot_rewards(all_data):
     for i, data in enumerate(all_data):
@@ -49,9 +49,12 @@ def plot_overrule(all_data):
 #                 "manual_logs/init_comp_500_1613018553.csv",
 #                 "manual_logs/init_comp_500_1613028610.csv"]]
 
-all_file_names = [["manual_logs/1000_test-1613762389.csv"],
-                  ["manual_logs/long_test_old_shield-1614009995.csv"],
-                  ["manual_logs/long_test_SIP_shield-1613967869.csv"]]
+all_file_names = [["manual_logs/DDQN_test_more_actions-1614356384.csv"],
+                  ["manual_logs/shield_test_more_actions-1614313374.csv"],
+                  ["manual_logs/SIP_shield_test_more_actions-1614385547.csv"],
+                  ["manual_logs/SSIP-1614460321.csv"],
+                  ["manual_logs/SIP_shield_test_more_actions_variable_reward-1614555234.csv"],
+                  ["manual_logs/SSIP_shield_test_more_actions_variable_reward-1614624657.csv"]]
 
 all_data = []
 

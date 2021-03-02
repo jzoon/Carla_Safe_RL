@@ -26,11 +26,6 @@ if __name__ == '__main__':
     save_collisions = []
     save_overrules = []
 
-    if SAVE_EXPERIENCES:
-        file_name = r"experiences/" + MODEL_NAME + "_" + str(int(time.time())) + ".csv"
-        f = open(file_name, "x")
-        f.close()
-
     if ENVIRONMENT == 1:
         env = CarEnv1()
     elif ENVIRONMENT == 2:
@@ -61,10 +56,6 @@ if __name__ == '__main__':
         while not done:
             if np.random.random() > epsilon:
                 action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))[::-1]
-
-                #if episode % 5 == 0 and step == 3:
-                #    print(agent.get_qs(np.expand_dims(current_state, axis=0)))
-                #    print(current_state)
             else:
                 action_list = list(range(env.AMOUNT_OF_ACTIONS))
                 random.shuffle(action_list)
@@ -78,21 +69,10 @@ if __name__ == '__main__':
                 if VARIABLE_REWARD:
                     difference = env.action_SIP_difference
                     agent.update_replay_memory((current_state, action_list[0], -difference/len(env.ACC_ACTIONS), current_state, True))
-                    print((current_state, action_list[0], -difference/len(env.ACC_ACTIONS), new_state, True))
                 else:
                     agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, current_state, True))
 
-
                 shield_overrules_episode += 1
-                if episode/EPISODES > 0.9:
-                    print("Agent action: " + str(action_list[0]))
-                    print("Chosen action: " + str(chosen_action))
-                    print(env.states)
-
-            if SAVE_EXPERIENCES:
-                f = open(file_name, "a")
-                f.write(str(current_state) + "," + str(chosen_action) + "," + str(reward) + "," + str(new_state) + "," + str(done) + "\n")
-                f.close()
 
             current_state = new_state
             step += 1
@@ -129,12 +109,9 @@ if __name__ == '__main__':
             save_collisions.append(sum(collisions[-AGGREGATE_STATS_EVERY:])/len(collisions[-AGGREGATE_STATS_EVERY:]))
             save_overrules.append(average_overrule)
 
-        if epsilon > MIN_EPSILON:
-            if EPSILON_DECAY_LINEAR:
-                epsilon -= 1/(EXPLORATION_STOP*EPISODES)
-            else:
-                epsilon *= EPSILON_DECAY
-                epsilon = max(MIN_EPSILON, epsilon)
+        if epsilon > 0:
+            epsilon -= 1/(EXPLORATION_STOP*EPISODES)
+            epsilon = max(0, epsilon)
 
     all_data = np.array([save_episodes, save_distances, save_times, save_collisions, save_rewards, save_overrules]).transpose()
     np.savetxt(r"manual_logs/" + MODEL_NAME + "-" + str(int(time.time())) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,return,overrule", comments="")

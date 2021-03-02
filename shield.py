@@ -11,10 +11,7 @@ class shield:
         for action in sorted_actions:
             if self.is_safe(action, speed, closest_object_distance):
                 return action
-            # else:
-            #    print(str(action) + " is not safe!")
 
-        # print("No safe action found. RIP")
         return 0
 
     def is_safe(self, action, speed, closest_object_distance):
