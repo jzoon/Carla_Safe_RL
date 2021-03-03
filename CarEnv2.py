@@ -242,7 +242,7 @@ class CarEnv2:
     def get_sip_limits(self):
         sip_limits = []
 
-        for i in range(1, 5):
+        for i in range(1, 4):
             sip_limits.append(self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, i*(ACTION_TO_STATE_TIME+0.5)))
 
         return sip_limits
