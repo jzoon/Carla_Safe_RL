@@ -5,14 +5,10 @@ from vel_to_acc import *
 
 class CarFollowing:
     delta = 4
-    d_0 = 2
-    T = 1.6
+    d_0 = 30
+    T = 4
     a = 3
     b = 8
-
-    if SUPER:
-        T = 4
-        d_0 = 30
 
     def __init__(self, acc_actions):
         self.acc_actions = acc_actions

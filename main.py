@@ -66,12 +66,7 @@ if __name__ == '__main__':
             agent.update_replay_memory((current_state, chosen_action, reward, new_state, done))
 
             if chosen_action != action_list[0]:
-                if VARIABLE_REWARD:
-                    difference = env.action_SIP_difference
-                    agent.update_replay_memory((current_state, action_list[0], -difference/len(env.ACC_ACTIONS), current_state, True))
-                else:
-                    agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, current_state, True))
-
+                agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, current_state, True))
                 shield_overrules_episode += 1
 
             current_state = new_state
@@ -118,4 +113,4 @@ if __name__ == '__main__':
 
     agent.terminate = True
     trainer_thread.join()
-    agent.model.save(f'models/{MODEL_NAME}__{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min-{int(time.time())}.model')
+    agent.model.save(f'models/{MODEL_NAME}__{int(time.time())}.model')

@@ -38,7 +38,6 @@ class CarEnv2:
     transform = None
     obstacle = None
     collision = False
-    action_SIP_difference = 0
 
     def __init__(self):
         self.client = carla.Client('localhost', 2000)
@@ -236,9 +235,6 @@ class CarEnv2:
 
                 for action in action_list:
                     if action in allowed_actions:
-                        if action != action_list[0]:
-                            self.action_SIP_difference = action_list[0] - allowed_actions[-1]
-
                         return action
 
         return action_list[0]
