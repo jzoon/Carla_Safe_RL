@@ -40,7 +40,7 @@ class CarEnv2:
     collision = False
 
     def __init__(self):
-        self.client = carla.Client('localhost', 2000)
+        self.client = carla.Client('localhost', PORT)
         self.client.set_timeout(4.0)
 
         self.world = self.client.load_world('Town01')

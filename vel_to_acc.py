@@ -53,3 +53,16 @@ class VelToAcc:
         distance = ((new_velocity + velocity) / 2) * time
 
         return distance
+
+ACC_ACTIONS = [-1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+v = VelToAcc(ACC_ACTIONS)
+
+import matplotlib.pyplot as plt
+plt.tight_layout()
+
+for i in reversed(range(11)):
+    vel = [x for _,x in sorted(zip(v.all_vel[i],v.all_acc[i]))]
+    plt.plot(sorted(v.all_vel[i]), vel, label=str(ACC_ACTIONS[i]))
+
+plt.legend(bbox_to_anchor=(1, 1))
+plt.show()

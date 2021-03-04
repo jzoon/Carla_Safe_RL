@@ -1,7 +1,7 @@
 # Simulation
 ENVIRONMENT = 2
 SECONDS_PER_EPISODE = 30
-EPISODES = 1
+EPISODES = 1000
 
 RENDERING = False
 SHIELD = False
@@ -38,7 +38,8 @@ DISCOUNT = 0.95
 EXPLORATION_STOP = 0.65
 
 # Other
-AGGREGATE_STATS_EVERY = EPISODES/20
+AGGREGATE_STATS_EVERY = int(EPISODES/10)
+PORT = 2400
 
 extra_name = ""
 MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIPshield" + str(int(SIP_SHIELD)) + "-" + extra_name
