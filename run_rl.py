@@ -11,21 +11,24 @@ from CarEnv3 import *
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-PLOT_BEHAVIOR = True
+PLOT_BEHAVIOR = False
 TEST_POLICY = False
 RANDOM = False
 
-MODEL_PATHS = ["models/SIP_shield_test_more_actions_variable_reward_____6.47max____4.03avg___-1.00min-1614555234.model"]
-EPISODES = 5
+MODEL_PATHS = ["models/Scenario1_Shield0_SIPshield0-__1615197142.model",
+    "models/Scenario1_Shield0_SIPshield0-__1615199385.model",
+    "models/Scenario1_Shield0_SIPshield0-__1615201576.model",
+    "models/Scenario1_Shield0_SIPshield0-__1615203732.model",
+    "models/Scenario1_Shield0_SIPshield0-__1615205990.model"]
+EPISODES = 2
 
 if __name__ == "__main__":
-    env = CarEnv2()
-
     all_average_rewards = []
     all_average_collisions = []
     all_average_speeds = []
 
     for MODEL_PATH in MODEL_PATHS:
+        env = CarEnv1()
         model = load_model(MODEL_PATH)
         fps_counter = deque(maxlen=15)
         model.predict(np.ones((1, env.STATE_LENGTH, env.STATE_WIDTH)))
@@ -57,8 +60,6 @@ if __name__ == "__main__":
                 else:
                     qs = model.predict(np.expand_dims(current_state, axis=0))[0]
                     action = np.argsort(qs)[::-1]
-                    print(qs)
-
 
                 new_state, reward, done, _ = env.step(action)
                 episode_reward += reward

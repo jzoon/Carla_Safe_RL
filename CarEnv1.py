@@ -42,7 +42,7 @@ class CarEnv1:
     obstacle = None
 
     def __init__(self):
-        self.client = carla.Client('localhost', PORT)
+        self.client = carla.Client('localhost', 2000)
         self.client.set_timeout(4.0)
 
         self.world = self.client.load_world('Town01')
@@ -193,9 +193,9 @@ class CarEnv1:
         desired_velocity = self.vehicle.get_speed_limit() * 0.95
 
         if self.speed < desired_velocity:
-            return 9
+            return 8
         else:
-            return 7
+            return 6
 
     def shield(self, action_list):
         for action in action_list:
