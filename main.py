@@ -42,7 +42,7 @@ if __name__ == '__main__':
     agent.get_qs(np.ones((1, env.STATE_LENGTH, env.STATE_WIDTH)))
 
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
-        if episode % 3 == 0 and ENVIRONMENT == 2:
+        if episode % 100 == 0 and ENVIRONMENT == 2:
             env = CarEnv2()
             time.sleep(5)
         if episode % UPDATE_TARGET_EVERY == 0:

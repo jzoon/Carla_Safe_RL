@@ -70,6 +70,8 @@ class CarEnv2:
                                                 carla.Rotation(pitch=-90)))
 
     def reset(self):
+        self.states = []
+
         self.collision = False
         self.previous_location = None
         self.obstacle = None
@@ -113,6 +115,7 @@ class CarEnv2:
 
     def step(self, action_list):
         self.update_parameters()
+        self.states.append(self.state)
 
         if SHIELD:
             action = self.shield(action_list)
@@ -150,6 +153,7 @@ class CarEnv2:
 
         if len(self.collision_hist) != 0:
             self.collision = True
+            print(self.states)
 
             return -SIMPLE_REWARD_B, True
 
@@ -231,7 +235,7 @@ class CarEnv2:
 
         for i, limit in enumerate(sip_limits):
             if closest_object_distance < limit:
-                allowed_actions = list(range(0, min(sip_action + 1 + (i * SIP_WIDTH), len(self.ACC_ACTIONS) + 1)))
+                allowed_actions = list(range(0, min(sip_action + i, len(self.ACC_ACTIONS) + 1)))
 
                 for action in action_list:
                     if action in allowed_actions:
@@ -242,7 +246,11 @@ class CarEnv2:
     def get_sip_limits(self):
         sip_limits = []
 
-        for i in range(1, 4):
-            sip_limits.append(self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, i*(ACTION_TO_STATE_TIME+0.5)))
+        base_deceleration = -self.vel_to_acc.get_acc(0, 1)
+        base_distance = (self.speed / base_deceleration) * 0.5 * self.speed
+
+        for i in range(1, len(self.ACC_ACTIONS)):
+            distance = self.vel_to_acc.get_distance(i, self.speed, (ACTION_TO_STATE_TIME+0.5))
+            sip_limits.append(base_distance + distance)
 
         return sip_limits

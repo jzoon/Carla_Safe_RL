@@ -1,10 +1,10 @@
 # Simulation
-ENVIRONMENT = 1
+ENVIRONMENT = 2
 SECONDS_PER_EPISODE = 30
 EPISODES = 200
 
-RENDERING = False
-SHIELD = False
+RENDERING = True
+SHIELD = True
 SIP_SHIELD = False
 
 INITIAL_SPEED = 7
@@ -24,7 +24,7 @@ SIP_WIDTH = 3
 
 # Shield
 BUFFER_TIME = 2
-BUFFER_DISTANCE = 20
+BUFFER_DISTANCE = 10
 
 # Q-learning
 REPLAY_MEMORY_SIZE = 50_000
@@ -41,5 +41,5 @@ EXPLORATION_STOP = 0.65
 AGGREGATE_STATS_EVERY = int(EPISODES/10)
 PORT = 2000
 
-extra_name = ""
+extra_name = "new_shield_test"
 MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIPshield" + str(int(SIP_SHIELD)) + "-" + extra_name
