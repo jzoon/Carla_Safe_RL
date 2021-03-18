@@ -22,9 +22,9 @@ class CarEnv1:
     STATE_LENGTH = 1
     STATE_WIDTH = 2
 
-    STEER_ACTIONS = [-0.5, 0.0, 0.5]
-    ACC_ACTIONS = [-1.0, -0.5, 0.0, 0.5, 1.0]
-    AMOUNT_OF_ACTIONS = len(STEER_ACTIONS) * len(ACC_ACTIONS)
+    STEER_ACTIONS = [-1.0, 1.0]
+    ACC_ACTIONS = [-1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    AMOUNT_OF_ACTIONS = len(STEER_ACTIONS) + len(ACC_ACTIONS)
 
     actor_list = []
     collision_hist = []
@@ -155,17 +155,14 @@ class CarEnv1:
         return SIMPLE_REWARD_A * (self.speed / v_max)
 
     def car_control(self, action):
-        steer_action = int(action / len(self.ACC_ACTIONS))
-        acc_action = action % len(self.ACC_ACTIONS)
-
-        if self.ACC_ACTIONS[acc_action] < 0:
-            self.vehicle.apply_control(
-                carla.VehicleControl(brake=-self.ACC_ACTIONS[acc_action], steer=self.STEER_ACTIONS[steer_action])
-            )
+        if action == 11:
+            self.vehicle.apply_control(carla.VehicleControl(steer=self.STEER_ACTIONS[0]))
+        elif action == 12:
+            self.vehicle.apply_control(carla.VehicleControl(steer=self.STEER_ACTIONS[1]))
+        elif self.ACC_ACTIONS[action] < 0:
+            self.vehicle.apply_control(carla.VehicleControl(brake=-self.ACC_ACTIONS[action]))
         else:
-            self.vehicle.apply_control(
-                carla.VehicleControl(throttle=self.ACC_ACTIONS[acc_action], steer=self.STEER_ACTIONS[steer_action])
-            )
+            self.vehicle.apply_control(carla.VehicleControl(throttle=self.ACC_ACTIONS[action]))
 
     def passed_destination(self, current_location, previous_location):
         up_x = max(current_location.x, previous_location.x) + 1
