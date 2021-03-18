@@ -15,12 +15,8 @@ PLOT_BEHAVIOR = False
 TEST_POLICY = False
 RANDOM = False
 
-MODEL_PATHS = ["models/Scenario1_Shield0_SIPshield0-__1615197142.model",
-    "models/Scenario1_Shield0_SIPshield0-__1615199385.model",
-    "models/Scenario1_Shield0_SIPshield0-__1615201576.model",
-    "models/Scenario1_Shield0_SIPshield0-__1615203732.model",
-    "models/Scenario1_Shield0_SIPshield0-__1615205990.model"]
-EPISODES = 2
+MODEL_PATHS = ["models/Scenario2_Shield0_SIPshield1-testtest__1615795977.model"]
+EPISODES = 100
 
 if __name__ == "__main__":
     all_average_rewards = []
@@ -28,7 +24,7 @@ if __name__ == "__main__":
     all_average_speeds = []
 
     for MODEL_PATH in MODEL_PATHS:
-        env = CarEnv1()
+        env = CarEnv2()
         model = load_model(MODEL_PATH)
         fps_counter = deque(maxlen=15)
         model.predict(np.ones((1, env.STATE_LENGTH, env.STATE_WIDTH)))

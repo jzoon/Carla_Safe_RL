@@ -33,7 +33,8 @@ if __name__ == '__main__':
     else:
         env = CarEnv3()
 
-    agent = DQNAgent(env.STATE_LENGTH, env.STATE_WIDTH, env.AMOUNT_OF_ACTIONS)
+    model_time = time.time()
+    agent = DQNAgent(env.STATE_LENGTH, env.STATE_WIDTH, env.AMOUNT_OF_ACTIONS, model_time)
 
     trainer_thread = Thread(target=agent.train_in_loop, daemon=True)
     trainer_thread.start()
@@ -43,7 +44,13 @@ if __name__ == '__main__':
 
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         if episode % 100 == 0 and ENVIRONMENT == 2:
-            env = CarEnv2()
+            created = False
+            while not created:
+                try:
+                    env = CarEnv2()
+                    created = True
+                except Exception as e:
+                    continue
             time.sleep(5)
         if episode % UPDATE_TARGET_EVERY == 0:
             agent.update_target_network()
@@ -112,8 +119,8 @@ if __name__ == '__main__':
             epsilon = max(0, epsilon)
 
     all_data = np.array([save_episodes, save_distances, save_times, save_collisions, save_rewards, save_overrules]).transpose()
-    np.savetxt(r"manual_logs/" + MODEL_NAME + "-" + str(int(time.time())) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,return,overrule", comments="")
+    np.savetxt(r"manual_logs/" + MODEL_NAME + "-" + str(int(model_time)) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,return,overrule", comments="")
 
     agent.terminate = True
     trainer_thread.join()
-    agent.model.save(f'models/{MODEL_NAME}__{int(time.time())}.model')
+    agent.model.save(f'models/{MODEL_NAME}__{int(model_time)}.model')

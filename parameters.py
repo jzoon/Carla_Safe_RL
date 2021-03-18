@@ -1,11 +1,11 @@
 # Simulation
 ENVIRONMENT = 2
 SECONDS_PER_EPISODE = 30
-EPISODES = 200
+EPISODES = 1000
 
-RENDERING = True
-SHIELD = True
-SIP_SHIELD = False
+RENDERING = False
+SHIELD = False
+SIP_SHIELD = True
 
 INITIAL_SPEED = 7
 if ENVIRONMENT == 2:
@@ -41,5 +41,5 @@ EXPLORATION_STOP = 0.65
 AGGREGATE_STATS_EVERY = int(EPISODES/10)
 PORT = 2000
 
-extra_name = "new_shield_test"
+extra_name = ""
 MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIPshield" + str(int(SIP_SHIELD)) + "-" + extra_name

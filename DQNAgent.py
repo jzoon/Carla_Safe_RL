@@ -10,7 +10,7 @@ import time
 import random
 
 class DQNAgent:
-    def __init__(self, state_length, state_width, output_size):
+    def __init__(self, state_length, state_width, output_size, model_time):
         self.state_length = state_length
         self.state_width = state_width
         self.output_size = output_size
@@ -19,7 +19,7 @@ class DQNAgent:
         self.target_model = self.create_model()
         self.target_model.set_weights(self.model.get_weights())
         self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
-        self.tensorboard = ModifiedTensorBoard(log_dir=f"logs/{MODEL_NAME}-{int(time.time())}")
+        self.tensorboard = ModifiedTensorBoard(log_dir=f"logs/{MODEL_NAME}-{int(model_time)}")
 
         self.target_update_counter = 0
         self.graph = tf.get_default_graph()

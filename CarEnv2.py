@@ -101,7 +101,7 @@ class CarEnv2:
 
         time.sleep(0.5)
         if self.obstacle is not None:
-            while self.calculate_distance(self.vehicle.get_location(), self.obstacle.other_actor.get_location()) < 15:
+            while self.calculate_distance(self.vehicle.get_location(), self.obstacle.other_actor.get_location()) < 25:
                 time.sleep(0.1)
 
         velocity = carla.Vector3D(-INITIAL_SPEED, 0, 0)
@@ -231,26 +231,24 @@ class CarEnv2:
 
         sip_action = self.car_following()
         closest_object_distance = self.calculate_distance(self.location, self.obstacle.other_actor.get_location())
-        sip_limits = self.get_sip_limits()
+        rho = self.get_sip_limits(sip_action, closest_object_distance)
 
-        for i, limit in enumerate(sip_limits):
-            if closest_object_distance < limit:
-                allowed_actions = list(range(0, min(sip_action + i, len(self.ACC_ACTIONS) + 1)))
+        if closest_object_distance < BUFFER_DISTANCE:
+            return min(action_list[0], sip_action)
 
-                for action in action_list:
-                    if action in allowed_actions:
-                        return action
+        for action in action_list:
+            if action <= sip_action + rho:
+                return action
 
         return action_list[0]
 
-    def get_sip_limits(self):
-        sip_limits = []
+    def get_sip_limits(self, sip_action, closest_object_distance):
+        distance = 0
 
-        base_deceleration = -self.vel_to_acc.get_acc(0, 1)
-        base_distance = (self.speed / base_deceleration) * 0.5 * self.speed
+        for i in range(1, 6):
+            distance += self.vel_to_acc.get_distance(sip_action, self.speed, 2*i)
 
-        for i in range(1, len(self.ACC_ACTIONS)):
-            distance = self.vel_to_acc.get_distance(i, self.speed, (ACTION_TO_STATE_TIME+0.5))
-            sip_limits.append(base_distance + distance)
+            if distance > closest_object_distance:
+                return (i-1) * 2
 
-        return sip_limits
+        return len(self.ACC_ACTIONS)
