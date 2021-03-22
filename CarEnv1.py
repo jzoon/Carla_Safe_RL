@@ -40,6 +40,7 @@ class CarEnv1:
     velocity = None
     transform = None
     obstacle = None
+    collision = False
 
     def __init__(self):
         self.client = carla.Client('localhost', 2000)
@@ -74,6 +75,7 @@ class CarEnv1:
         self.actor_list = []
         self.lane_hist = []
         self.vehicle = None
+        self.collision = False
 
         while self.vehicle is None:
             self.vehicle = self.world.try_spawn_actor(self.model_3, self.start_transform)
@@ -132,17 +134,11 @@ class CarEnv1:
         reward = self.reward_simple()
 
         if self.passed_destination(self.location, self.previous_location) or self.episode_start + SECONDS_PER_EPISODE < time.time():
-            self.collision_hist = []
-            self.lane_hist = []
+            return SIMPLE_REWARD_C, True
 
-            reward += SIMPLE_REWARD_C
+        if len(self.lane_hist) != 0 or len(self.collision_hist) != 0:
+            self.collision = True
 
-            return reward, True
-
-        if len(self.lane_hist) != 0:
-            return -SIMPLE_REWARD_B, True
-
-        if len(self.collision_hist) != 0:
             return -SIMPLE_REWARD_B, True
 
         return reward, False
@@ -181,7 +177,7 @@ class CarEnv1:
         return [[self.speed, rotation_difference]]
 
     def get_KPI(self):
-        return self.calculate_distance(self.location, self.start_transform.location), len(self.collision_hist) > 0 or len(self.lane_hist) > 0
+        return self.calculate_distance(self.location, self.start_transform.location), self.collision
 
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)
@@ -196,7 +192,7 @@ class CarEnv1:
 
     def shield(self, action_list):
         for action in action_list:
-            if self.STEER_ACTIONS[int(action / len(self.ACC_ACTIONS))] == 0.0:
+            if action <= 10 :
                 return action
 
-        return 5
+        return 0

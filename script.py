@@ -1,6 +1,6 @@
 i = 0
 
-while i < 1:
+while i < 4:
     try:
         exec(open("main.py").read())
         i += 1
