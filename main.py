@@ -72,8 +72,12 @@ if __name__ == '__main__':
 
             new_state, reward, done, chosen_action = env.step(action_list)
 
+            update_done = done
+            if ENVIRONMENT == 1 and reward == 1:
+                update_done = False
+
             episode_reward += reward
-            agent.update_replay_memory((current_state, chosen_action, reward, new_state, done))
+            agent.update_replay_memory((current_state, chosen_action, reward, new_state, update_done))
 
             if chosen_action != action_list[0]:
                 agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, current_state, True))
@@ -117,6 +121,11 @@ if __name__ == '__main__':
         if epsilon > 0:
             epsilon -= 1/(EXPLORATION_STOP*EPISODES)
             epsilon = max(0, epsilon)
+
+        if episode == 800:
+            agent.model.save(f'models/{MODEL_NAME}__{int(model_time)}-800.model')
+        elif episode == 900:
+            agent.model.save(f'models/{MODEL_NAME}__{int(model_time)}-900.model')
 
     all_data = np.array([save_episodes, save_distances, save_times, save_collisions, save_rewards, save_overrules]).transpose()
     np.savetxt(r"manual_logs/" + MODEL_NAME + "-" + str(int(model_time)) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,return,overrule", comments="")

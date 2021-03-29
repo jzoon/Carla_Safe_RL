@@ -60,7 +60,8 @@ class CarEnv1:
         self.model_3.set_attribute('color', '255,0,0')
 
         self.start_transform = self.world.get_map().get_spawn_points()[64]
-        self.destination = self.world.get_map().get_spawn_points()[184] # VERANDEREN ZODAT DE AUTO NIET BOTST
+        self.destination = self.world.get_map().get_spawn_points()[184]
+        self.destination_distance = 300
 
         self.shield_object = shield(self.ACC_ACTIONS)
 
@@ -133,7 +134,7 @@ class CarEnv1:
     def get_reward_and_done(self):
         reward = self.reward_simple()
 
-        if self.passed_destination(self.location, self.previous_location) or self.episode_start + SECONDS_PER_EPISODE < time.time():
+        if self.passed_destination() or self.episode_start + SECONDS_PER_EPISODE < time.time():
             return SIMPLE_REWARD_C, True
 
         if len(self.lane_hist) != 0 or len(self.collision_hist) != 0:
@@ -160,13 +161,8 @@ class CarEnv1:
         else:
             self.vehicle.apply_control(carla.VehicleControl(throttle=self.ACC_ACTIONS[action]))
 
-    def passed_destination(self, current_location, previous_location):
-        up_x = max(current_location.x, previous_location.x) + 1
-        down_x = min(current_location.x, previous_location.x) - 1
-        up_y = max(current_location.y, previous_location.y) + 1
-        down_y = min(current_location.y, previous_location.y) - 1
-
-        if down_x < self.destination.location.x < up_x and down_y < self.destination.location.y < up_y:
+    def passed_destination(self):
+        if self.calculate_distance(self.location, self.start_transform.location) > self.destination_distance:
             return True
 
         return False
