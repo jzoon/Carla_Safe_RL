@@ -231,7 +231,7 @@ class CarEnv2:
 
         sip_action = self.car_following()
         closest_object_distance = self.calculate_distance(self.location, self.obstacle.other_actor.get_location())
-        rho = self.get_sip_limits(sip_action, closest_object_distance)
+        rho = self.get_sip_limits(closest_object_distance)
 
         if closest_object_distance < BUFFER_DISTANCE:
             return min(action_list[0], sip_action)
@@ -242,13 +242,15 @@ class CarEnv2:
 
         return action_list[0]
 
-    def get_sip_limits(self, sip_action, closest_object_distance):
-        distance = 0
+    def get_sip_limits(self, closest_object_distance):
+        x_min = (0.5 * self.speed ** 2) / -self.vel_to_acc.get_acc(0, 1)
+        new_speed = self.vel_to_acc.get_speed(len(self.ACC_ACTIONS) - 1, self.speed, 2)
+        brake_distance = (0.5 * new_speed ** 2) / -self.vel_to_acc.get_acc(0, new_speed)
+        x_max = brake_distance + self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, 2)
 
-        for i in range(1, 6):
-            distance += self.vel_to_acc.get_distance(sip_action, self.speed, 2*i)
-
-            if distance > closest_object_distance:
-                return (i-1) * 2
-
-        return len(self.ACC_ACTIONS)
+        if closest_object_distance < x_min:
+            return 0
+        elif closest_object_distance > x_max:
+            return len(self.ACC_ACTIONS)
+        else:
+            return int(len(self.ACC_ACTIONS) * ((closest_object_distance-x_min) / (x_max-x_min)))

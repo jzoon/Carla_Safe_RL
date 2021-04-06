@@ -4,8 +4,8 @@ SECONDS_PER_EPISODE = 30
 EPISODES = 1000
 
 RENDERING = False
-SHIELD = True
-SIP_SHIELD = False
+SHIELD = False
+SIP_SHIELD = True
 
 FABRICATE_ACTIONS = False
 ALT_LOSS = False
@@ -45,5 +45,5 @@ BETA = 10
 AGGREGATE_STATS_EVERY = int(EPISODES/10)
 PORT = 2000
 
-extra_name = "no_fabric_loss"
+extra_name = "testtest"
 MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIPshield" + str(int(SIP_SHIELD)) + "-" + extra_name
