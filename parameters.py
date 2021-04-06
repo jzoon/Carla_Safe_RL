@@ -7,6 +7,9 @@ RENDERING = False
 SHIELD = True
 SIP_SHIELD = False
 
+FABRICATE_ACTIONS = False
+ALT_LOSS = False
+
 INITIAL_SPEED = 7
 AMOUNT_OF_VEHICLES = 100
 
@@ -25,7 +28,7 @@ BUFFER_DISTANCE = 10
 
 # Q-learning
 REPLAY_MEMORY_SIZE = 50_000
-MIN_REPLAY_MEMORY_SIZE = 200
+MIN_REPLAY_MEMORY_SIZE = 16 #200
 MINIBATCH_SIZE = 16
 PREDICTION_BATCH_SIZE = 1
 TRAINING_BATCH_SIZE = MINIBATCH_SIZE // 4
@@ -34,9 +37,13 @@ LEARNING_RATE = 0.00025
 DISCOUNT = 0.95
 EXPLORATION_STOP = 0.65
 
+# Alternative loss function
+LAMBDA = 1
+BETA = 10
+
 # Other
 AGGREGATE_STATS_EVERY = int(EPISODES/10)
 PORT = 2000
 
-extra_name = ""
+extra_name = "no_fabric_loss"
 MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIPshield" + str(int(SIP_SHIELD)) + "-" + extra_name

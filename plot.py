@@ -4,15 +4,17 @@ from scipy.ndimage.filters import gaussian_filter1d
 import seaborn as sns
 import pandas as pd
 
-figure_name = "Scenario1_DDQN_"
-names = ["DDQN", "SCS", "SIPS"]
+figure_name = "Scenario2_test_loss_1_"
+names = ["Fabricate", "SIPS"]
+save = False
 
 def plot_rewards(all_data):
     for i, data in enumerate(all_data):
         sns.lineplot(x="episode", y="return", data=data, label=names[i], ci="sd")
     plt.xlabel("Episode")
     plt.ylabel("Return")
-    #plt.savefig("plots/" + figure_name + "return.png")
+    if save:
+        plt.savefig("plots/" + figure_name + "return.png")
     plt.show()
 
 
@@ -21,7 +23,8 @@ def plot_collisions(all_data):
         sns.lineplot(x="episode", y="collisions per km", data=data, label=names[i], ci="sd")
     plt.xlabel("Episode")
     plt.ylabel("Collisions per km")
-    #plt.savefig("plots/" + figure_name + "col.png")
+    if save:
+        plt.savefig("plots/" + figure_name + "col.png")
     plt.show()
 
 
@@ -30,7 +33,8 @@ def plot_speed(all_data):
         sns.lineplot(x="episode", y="speed", data=data, label=names[i], ci="sd")
     plt.xlabel("Episode")
     plt.ylabel("Average speed (m/s)")
-    #plt.savefig("plots/" + figure_name + "speed.png")
+    if save:
+        plt.savefig("plots/" + figure_name + "speed.png")
     plt.show()
 
 def plot_overrule(all_data):
@@ -38,21 +42,17 @@ def plot_overrule(all_data):
         sns.lineplot(x="episode", y="overrule", data=data, label=names[i], ci="sd")
     plt.xlabel("Episode")
     plt.ylabel("Overruled actions by shield (%)")
-    plt.savefig("plots/" + figure_name + "overrule.png")
+    if save:
+        plt.savefig("plots/" + figure_name + "overrule.png")
     plt.show()
 
-all_file_names = [["manual_logs/Scenario1_Shield0_SIPshield0--1616658124.csv",
-"manual_logs/Scenario1_Shield0_SIPshield0--1616661125.csv",
-"manual_logs/Scenario1_Shield0_SIPshield0--1616664330.csv",
-"manual_logs/Scenario1_Shield0_SIPshield0--1616677881.csv",
-"manual_logs/Scenario1_Shield0_SIPshield0--1616681009.csv"]]
-#["manual_logs/Scenario1_Shield1_SIPshield0--1616581639.csv",
-#"manual_logs/Scenario1_Shield1_SIPshield0--1616585968.csv",
-#"manual_logs/Scenario1_Shield1_SIPshield0--1616590225.csv",
-#"manual_logs/Scenario1_Shield1_SIPshield0--1616594652.csv",
-#"manual_logs/Scenario1_Shield1_SIPshield0--1616598888.csv"]]
-all_file_names = [["manual_logs/Scenario2_Shield0_SIPshield0--1615899395.csv"]]
-
+all_file_names = [["manual_logs/Scenario2_Shield1_SIPshield0--1616589196.csv",
+"manual_logs/Scenario2_Shield1_SIPshield0--1617192844.csv",
+"manual_logs/Scenario2_Shield1_SIPshield0--1617290509.csv",
+"manual_logs/Scenario2_Shield1_SIPshield0--1617319214.csv",
+"manual_logs/Scenario2_Shield1_SIPshield0--1617349168.csv"],
+["manual_logs/Scenario2_Shield0_SIPshield1--1616746781.csv",
+"manual_logs/Scenario2_Shield0_SIPshield1--1617656695.csv"]]
 
 all_data = []
 
@@ -79,4 +79,4 @@ for file_names in all_file_names:
 plot_rewards(all_data)
 plot_collisions(all_data)
 plot_speed(all_data)
-#plot_overrule(all_data)
+plot_overrule(all_data)

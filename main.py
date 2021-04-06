@@ -1,13 +1,17 @@
 from parameters import *
 import random
 import numpy as np
-from DQNAgent import *
 from CarEnv1 import *
 from CarEnv2 import *
 from CarEnv3 import *
 from CarFollowing import *
 from threading import Thread
 from tqdm import tqdm
+
+if ALT_LOSS:
+    from DQNAgentLoss import *
+else:
+    from DQNAgent import *
 
 
 if __name__ == '__main__':
@@ -80,7 +84,8 @@ if __name__ == '__main__':
             agent.update_replay_memory((current_state, chosen_action, reward, new_state, update_done))
 
             if chosen_action != action_list[0]:
-                agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, current_state, True))
+                if FABRICATE_ACTIONS:
+                    agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, current_state, True))
                 shield_overrules_episode += 1
 
             current_state = new_state
