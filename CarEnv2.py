@@ -59,7 +59,25 @@ class CarEnv2:
         self.start_transform = self.world.get_map().get_spawn_points()[2]
         self.start_transform.location.x += 28
         self.destination_distance = 200
-        spawn_npc.main()
+
+        if TEST_SCENARIO == 1:
+            self.other_transform = self.world.get_map().get_spawn_points()[2]
+            self.other_transform.location.x -= 122
+            self.world.try_spawn_actor(self.model_3, self.other_transform)
+        elif TEST_SCENARIO == 2:
+            self.other_transform = self.world.get_map().get_spawn_points()[2]
+            self.other_transform.location.x -= 2
+            self.other_vehicle = self.world.try_spawn_actor(self.model_3, self.other_transform)
+            velocity = carla.Vector3D(-6, 0, 0)
+            self.other_vehicle.set_velocity(velocity)
+        elif TEST_SCENARIO == 3:
+            self.other_transform = self.world.get_map().get_spawn_points()[2]
+            self.other_transform.location.x -= 2
+            self.other_vehicle = self.world.try_spawn_actor(self.model_3, self.other_transform)
+            velocity = carla.Vector3D(-12, 0, 0)
+            self.other_vehicle.set_velocity(velocity)
+        else:
+            spawn_npc.main()
 
         self.shield_object = shield(self.ACC_ACTIONS)
         self.car_following_object = CarFollowing(self.ACC_ACTIONS)
@@ -114,6 +132,18 @@ class CarEnv2:
         return self.state
 
     def step(self, action_list):
+        if TEST_SCENARIO == 2:
+            velocity = carla.Vector3D(-6, 0, 0)
+            self.other_vehicle.set_velocity(velocity)
+        if TEST_SCENARIO == 3:
+            if time.time() - self.episode_start > 10:
+                self.other_vehicle.apply_control(
+                    carla.VehicleControl(brake=-1.0)
+                )
+            else:
+                velocity = carla.Vector3D(-12, 0, 0)
+                self.other_vehicle.set_velocity(velocity)
+
         self.update_parameters()
         self.states.append(self.state)
 
@@ -243,10 +273,10 @@ class CarEnv2:
         return action_list[0]
 
     def get_sip_limits(self, closest_object_distance):
-        x_min = (0.5 * self.speed ** 2) / -self.vel_to_acc.get_acc(0, 1)
+        x_min = ((0.5 * self.speed ** 2) / -self.vel_to_acc.get_acc(0, 1)) + BUFFER_DISTANCE
         new_speed = self.vel_to_acc.get_speed(len(self.ACC_ACTIONS) - 1, self.speed, 2)
         brake_distance = (0.5 * new_speed ** 2) / -self.vel_to_acc.get_acc(0, new_speed)
-        x_max = brake_distance + self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, 2)
+        x_max = brake_distance + self.vel_to_acc.get_distance(len(self.ACC_ACTIONS) - 1, self.speed, 2) + BUFFER_DISTANCE
 
         if closest_object_distance < x_min:
             return 0

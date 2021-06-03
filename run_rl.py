@@ -1,13 +1,9 @@
 from collections import deque
 import numpy as np
-import time
-import tensorflow as tf
-import keras.backend.tensorflow_backend as backend
 from keras.models import load_model
-from parameters import *
 from CarEnv1 import *
 from CarEnv2 import *
-from CarEnv3 import *
+from old.CarEnv3 import *
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
@@ -15,11 +11,10 @@ PLOT_BEHAVIOR = False
 TEST_POLICY = False
 RANDOM = False
 
-MODEL_PATHS = [["models/Scenario2_Shield1_SIPshield0-__1616144061.model",
-"models/Scenario2_Shield1_SIPshield0-__1616240760.model"],
-["models/Scenario2_Shield1_SIPshield0-__1616424999.model",
-"models/Scenario2_Shield1_SIPshield0-__1616503933.model"]]
-EPISODES = 2
+MODEL_PATHS = [["models/Scenario2/DDQN/Scenario2_Shield0_SIPshield0-__1618654364-800.model"]]
+#MODEL_PATHS = [["models/Scenario2/SCS/Scenario2_Shield1_SIPshield0-__1617192844.model"]]
+#MODEL_PATHS = [["models/Scenario2/SIPS/Scenario2_Shield0_SIPshield1-__1618297434-900.model"]]
+EPISODES = 100
 
 if __name__ == "__main__":
     all_average_rewards = []
@@ -95,19 +90,40 @@ if __name__ == "__main__":
                 for actor in env.actor_list:
                     actor.destroy()
 
-                if PLOT_BEHAVIOR and col > 0:
+                if PLOT_BEHAVIOR:
+                    print(own_speed)
+                    print(other_speed)
+                    print(obstacle_distance)
                     ax1 = plt.plot(list(range(step-1)), own_speed, label="Speed AV (m/s)")
-                    ax2 = plt.plot(list(range(step-1)), other_speed, label="Speed front vehicle (m/s)")
-                    ax3 = plt.plot(list(range(step - 1)), obstacle_distance, label="Distance (m)")
+                    #ax2 = plt.plot(list(range(step-1)), other_speed, label="Speed front vehicle (m/s)")
+                    #ax3 = plt.plot(list(range(step - 1)), obstacle_distance, label="Distance (m)")
                     plt.legend()
-                    plt.savefig("tempplots/" + str(episode))
-                    plt.show()
+                    plt.xlabel("Step")
+                    #plt.savefig("tempplots/" + str(episode))
+                    #plt.show()
 
             average_reward = np.mean(all_rewards)
+            std_reward = np.std(all_rewards)
             average_col = sum(all_collisions)/(sum(all_distances)/1000)
+            std_col = (np.std(np.array(all_collisions)/np.array(all_distances)/1000))
             average_speed = sum(all_distances)/sum(all_times)
+            std_speed = (np.std(np.array(all_distances)/np.array(all_times)))
+
+            print("ERWIN")
+            print(average_reward)
+            print(std_reward)
+            print(average_col)
+            print(std_col)
+            print(average_speed)
+            print(std_speed)
+            print()
 
             if average_col < min_col:
+                min_col = average_col
+                best_reward = average_reward
+                best_speed = average_speed
+                mp = MODEL_PATH
+            elif average_col == min_col and average_speed > best_speed:
                 min_col = average_col
                 best_reward = average_reward
                 best_speed = average_speed

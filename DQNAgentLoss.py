@@ -14,7 +14,7 @@ from shield import shield
 
 def shield_loss(y_true, y_predict):
     loss = kb.mean(kb.square(y_true[:, :11] - y_predict[:, :11]))
-    terms = (kb.exp(BETA*y_predict[:, :11])) / (kb.sum(kb.exp(BETA*y_predict[:, :11])) + 0.001)
+    terms = (kb.exp(y_predict[:, :11])) / (kb.sum(kb.exp(y_predict[:, :11])) + 0.001)
     loss += LAMBDA * (kb.sum(y_true[:, 11:] * terms))
 
     return loss
@@ -75,9 +75,9 @@ class DQNAgent:
 
             for action in range(11):
                 if self.shield.is_safe(action, state[0, 0], state[0, 1]):
-                    action_list.append(0)
+                    action_list.append(0.0)
                 else:
-                    action_list.append(1)
+                    action_list.append(1.0)
 
             shield_list.append(action_list)
 

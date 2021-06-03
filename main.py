@@ -1,9 +1,6 @@
-from parameters import *
-import random
-import numpy as np
 from CarEnv1 import *
 from CarEnv2 import *
-from CarEnv3 import *
+from old.CarEnv3 import *
 from CarFollowing import *
 from threading import Thread
 from tqdm import tqdm

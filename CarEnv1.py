@@ -111,6 +111,8 @@ class CarEnv1:
 
         if SHIELD:
             action = self.shield(action_list)
+        elif SIP_SHIELD:
+            action = self.sip_shield(action_list)
         else:
             action = action_list[0]
 
@@ -178,7 +180,7 @@ class CarEnv1:
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)
 
-    def car_following(self, _):
+    def car_following(self):
         desired_velocity = self.vehicle.get_speed_limit() * 0.95
 
         if self.speed < desired_velocity:
@@ -189,6 +191,15 @@ class CarEnv1:
     def shield(self, action_list):
         for action in action_list:
             if action <= 10 :
+                return action
+
+        return 0
+
+    def sip_shield(self, action_list):
+        rho = 0
+
+        for action in action_list:
+            if action - 10 <= rho:
                 return action
 
         return 0

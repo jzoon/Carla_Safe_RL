@@ -3,9 +3,9 @@ ENVIRONMENT = 2
 SECONDS_PER_EPISODE = 30
 EPISODES = 1000
 
-RENDERING = False
+RENDERING = True
 SHIELD = False
-SIP_SHIELD = True
+SIP_SHIELD = False
 
 FABRICATE_ACTIONS = False
 ALT_LOSS = False
@@ -28,7 +28,7 @@ BUFFER_DISTANCE = 10
 
 # Q-learning
 REPLAY_MEMORY_SIZE = 50_000
-MIN_REPLAY_MEMORY_SIZE = 16 #200
+MIN_REPLAY_MEMORY_SIZE = 200
 MINIBATCH_SIZE = 16
 PREDICTION_BATCH_SIZE = 1
 TRAINING_BATCH_SIZE = MINIBATCH_SIZE // 4
@@ -38,12 +38,15 @@ DISCOUNT = 0.95
 EXPLORATION_STOP = 0.65
 
 # Alternative loss function
-LAMBDA = 1
-BETA = 10
+LAMBDA = 5
+BETA = 5
+
+# Behavior evaluation
+TEST_SCENARIO = 0
 
 # Other
 AGGREGATE_STATS_EVERY = int(EPISODES/10)
 PORT = 2000
 
-extra_name = "testtest"
+extra_name = "alt_loss_no_beta"
 MODEL_NAME = "Scenario" + str(ENVIRONMENT) + "_Shield" + str(int(SHIELD)) + "_SIPshield" + str(int(SIP_SHIELD)) + "-" + extra_name
