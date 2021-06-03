@@ -1,6 +1,8 @@
 from parameters import *
 
 
+# This class uses measurements from CARLA to map the current velocity and actions to accelerations. The data was
+# gathered by Paul Netto at TNO.
 class VelToAcc:
     def __init__(self, acc_actions):
         self.all_vel = []
@@ -49,7 +51,6 @@ class VelToAcc:
 
     def get_distance(self, action, velocity, time):
         new_velocity = self.get_speed(action, velocity, time)
-        # This can overestimate the distance, since velocity might be 0 before time is over
         distance = ((new_velocity + velocity) / 2) * time
 
         return distance

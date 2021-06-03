@@ -12,6 +12,8 @@ import random
 from shield import shield
 
 
+# This alternative loss function punishes the agent if it generates high Q-values for actions that would be overruled
+# by a shield.
 def shield_loss(y_true, y_predict):
     loss = kb.mean(kb.square(y_true[:, :11] - y_predict[:, :11]))
     terms = (kb.exp(y_predict[:, :11])) / (kb.sum(kb.exp(y_predict[:, :11])) + 0.001)
@@ -19,8 +21,10 @@ def shield_loss(y_true, y_predict):
 
     return loss
 
-
+# This class defines the DDQN agent methods when an alternative loss function is used as the shield-based learning
+# method.
 class DQNAgent:
+    # Initializes the neural network.
     def __init__(self, state_length, state_width, output_size, model_time):
         self.state_width = state_width + output_size
         self.output_size = output_size * 2
@@ -41,6 +45,8 @@ class DQNAgent:
 
         self.shield = shield([-1.0, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
+    # Creates the neural network model, with an input layer, output layer and three hidden layers. Parallel to the NN,
+    # an extra input is forwarded through the model which indicates whether actions would be overruled or not.
     def create_model(self):
         inputs = layers.Input(shape=(self.state_length, self.state_width,))
         input_state = layers.Lambda(lambda x: x[:, :, :3])(inputs)
@@ -59,9 +65,13 @@ class DQNAgent:
 
         return model
 
+    # Adds an experience to the replay memory.
     def update_replay_memory(self, transition):
         self.replay_memory.append(transition)
 
+    # Trains the DDQN. If the replay buffer is large enough, a minibatch is sampled on which the DDQN is trained by
+    # using the Bellman equation and the target network. The overruled actions are appended in this process so that
+    # they can be used by the alternative loss function.
     def train(self):
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
             return
@@ -123,12 +133,15 @@ class DQNAgent:
         with self.graph.as_default():
             self.model.fit(np.array(X), np.array(y), batch_size=TRAINING_BATCH_SIZE, verbose=0, shuffle=False, callbacks=[self.tensorboard] if log_this_step else None)
 
+    # Updates the target network.
     def update_target_network(self):
         self.target_model.set_weights(self.model.get_weights())
 
+    # Returns the Q-values for a state.
     def get_qs(self, state):
         return self.model.predict(np.concatenate((state, np.zeros([state.shape[0], 1, 11])), 2))[0, :11]
 
+    # Is used to be able to train the network in a loop parallel to the agent exploring the environment.
     def train_in_loop(self):
         X = np.random.uniform(size=(1, self.state_length, self.state_width)).astype(np.float32)
         y = np.random.uniform(size=(1, self.output_size)).astype(np.float32)
@@ -145,6 +158,7 @@ class DQNAgent:
             self.train()
             time.sleep(0.01)
 
+# This class initializes the TensorBoard, which can be used to visualize the process.
 class ModifiedTensorBoard(TensorBoard):
     # Overriding init to set initial step and writer (we want one log file for all .fit() calls)
     def __init__(self, **kwargs):

@@ -1,3 +1,5 @@
+# In this file, all parameters that are used in the rest of the code can be set.
+
 # Simulation
 ENVIRONMENT = 2
 SECONDS_PER_EPISODE = 30
@@ -19,9 +21,6 @@ SIMPLE_REWARD_C = 1
 
 ACTION_TO_STATE_TIME = 1.5
 
-# SIP Shield
-SIP_WIDTH = 3
-
 # Shield
 BUFFER_TIME = 2
 BUFFER_DISTANCE = 10
@@ -39,7 +38,6 @@ EXPLORATION_STOP = 0.65
 
 # Alternative loss function
 LAMBDA = 5
-BETA = 5
 
 # Behavior evaluation
 TEST_SCENARIO = 0

@@ -7,6 +7,7 @@ import glob
 import os
 from shield import *
 
+# Connect to CARLA
 try:
     sys.path.append(glob.glob('../carla/dist/carla-*%d.%d-%s.egg' % (
         sys.version_info.major,
@@ -18,6 +19,8 @@ except IndexError:
 import carla
 
 
+# This class acts as the environment in the RL approach and directly interacts with the CARLA simulator.
+# The scenario is a straight road without traffic.
 class CarEnv1:
     STATE_LENGTH = 1
     STATE_WIDTH = 2
@@ -42,6 +45,7 @@ class CarEnv1:
     obstacle = None
     collision = False
 
+    # Initialize environment. Connect to CARLA, and create objects.
     def __init__(self):
         self.client = carla.Client('localhost', 2000)
         self.client.set_timeout(4.0)
@@ -69,6 +73,8 @@ class CarEnv1:
         spectator.set_transform(carla.Transform(self.start_transform.location + carla.Location(z=50),
                                                 carla.Rotation(pitch=-90)))
 
+    # Resets the environment for a new episode. Variables are reset, vehicle is spawned, sensors are attached and
+    # state is returned.
     def reset(self):
         self.obstacle = None
 
@@ -106,6 +112,9 @@ class CarEnv1:
 
         return self.state
 
+    # One step in the environment is run when this function is called. The first action on the action list is executed,
+    # except when one of the shields is employed and overrules it. Then, the new state of the environment is returned
+    # to the agent.
     def step(self, action_list):
         self.update_parameters()
 
@@ -126,6 +135,7 @@ class CarEnv1:
 
         return self.state, reward, done, action
 
+    # The parameters (location, transform, velocity, speed and state) of the AV are updated.
     def update_parameters(self):
         self.location = self.vehicle.get_location()
         self.transform = self.vehicle.get_transform()
@@ -133,11 +143,16 @@ class CarEnv1:
         self.speed = math.sqrt(self.velocity.x ** 2 + self.velocity.y ** 2 + self.velocity.z ** 2)
         self.state = self.get_state()
 
+    # Determines the reward and whether the episode has ended. An episode ends if the vehicle passes its destination,
+    # runs out of time or leaves the road.
     def get_reward_and_done(self):
         reward = self.reward_simple()
 
-        if self.passed_destination() or self.episode_start + SECONDS_PER_EPISODE < time.time():
+        if self.passed_destination():
             return SIMPLE_REWARD_C, True
+
+        if self.episode_start + SECONDS_PER_EPISODE < time.time():
+            return reward, True
 
         if len(self.lane_hist) != 0 or len(self.collision_hist) != 0:
             self.collision = True
@@ -146,6 +161,7 @@ class CarEnv1:
 
         return reward, False
 
+    # Calculates the reward based on the current velocity and the speed limit of the AV.
     def reward_simple(self):
         v_max = self.vehicle.get_speed_limit()
         if v_max < 1:
@@ -153,6 +169,7 @@ class CarEnv1:
 
         return SIMPLE_REWARD_A * (self.speed / v_max)
 
+    # Sends the control action to CARLA based on the chosen action.
     def car_control(self, action):
         if action == 11:
             self.vehicle.apply_control(carla.VehicleControl(steer=self.STEER_ACTIONS[0]))
@@ -163,23 +180,28 @@ class CarEnv1:
         else:
             self.vehicle.apply_control(carla.VehicleControl(throttle=self.ACC_ACTIONS[action]))
 
+    # Determines whether the AV has passed its destination.
     def passed_destination(self):
         if self.calculate_distance(self.location, self.start_transform.location) > self.destination_distance:
             return True
 
         return False
 
+    # Returns the current state of the vehicle, consisting of the speed and the relative rotation.
     def get_state(self):
         rotation_difference = abs(self.transform.rotation.yaw - self.map.get_waypoint(self.location).transform.rotation.yaw)
 
         return [[self.speed, rotation_difference]]
 
+    # Returns the variables needed for the KPI's, which are the distance driven and whether the AV has had a collision.
     def get_KPI(self):
         return self.calculate_distance(self.location, self.start_transform.location), self.collision
 
+    # Calculates the distance between two locations.
     def calculate_distance(self, location_a, location_b):
         return math.sqrt((location_a.x - location_b.x) ** 2 + (location_a.y - location_b.y) ** 2)
 
+    # The Safe Initial Policy for this scenario is quite simple and defined in this function.
     def car_following(self):
         desired_velocity = self.vehicle.get_speed_limit() * 0.95
 
@@ -188,6 +210,7 @@ class CarEnv1:
         else:
             return 6
 
+    # The Safety Checking Shield. If the agent uses a steering action, it is overruled.
     def shield(self, action_list):
         for action in action_list:
             if action <= 10 :
@@ -195,6 +218,8 @@ class CarEnv1:
 
         return 0
 
+    # The Safe Initial Policy Shield. If the agent uses an action that deviates more than 0 from the steering action
+    # of the Safe Initial Policy, it is overruled.
     def sip_shield(self, action_list):
         rho = 0
 

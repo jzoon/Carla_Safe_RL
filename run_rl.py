@@ -7,13 +7,14 @@ from old.CarEnv3 import *
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+# Choose whether to plot the behavior of the agent and whether to test the Safe Initial Policy or a random policy
 PLOT_BEHAVIOR = False
 TEST_POLICY = False
 RANDOM = False
 
+# Insert a model here to evaluate it. Models can also be evaluated in groups, in which case the results for the
+# safest model of the group are printed.
 MODEL_PATHS = [["models/Scenario2/DDQN/Scenario2_Shield0_SIPshield0-__1618654364-800.model"]]
-#MODEL_PATHS = [["models/Scenario2/SCS/Scenario2_Shield1_SIPshield0-__1617192844.model"]]
-#MODEL_PATHS = [["models/Scenario2/SIPS/Scenario2_Shield0_SIPshield1-__1618297434-900.model"]]
 EPISODES = 100
 
 if __name__ == "__main__":
@@ -70,7 +71,6 @@ if __name__ == "__main__":
 
                     frame_time = time.time() - step_start
                     fps_counter.append(frame_time)
-                    #print(f'Agent: {len(fps_counter)/sum(fps_counter):>4.1f} FPS | Action: {action} | Reward: {reward}')
 
                     if PLOT_BEHAVIOR:
                         own_speed.append(env.speed)
@@ -91,16 +91,13 @@ if __name__ == "__main__":
                     actor.destroy()
 
                 if PLOT_BEHAVIOR:
-                    print(own_speed)
-                    print(other_speed)
-                    print(obstacle_distance)
                     ax1 = plt.plot(list(range(step-1)), own_speed, label="Speed AV (m/s)")
-                    #ax2 = plt.plot(list(range(step-1)), other_speed, label="Speed front vehicle (m/s)")
-                    #ax3 = plt.plot(list(range(step - 1)), obstacle_distance, label="Distance (m)")
+                    ax2 = plt.plot(list(range(step-1)), other_speed, label="Speed front vehicle (m/s)")
+                    ax3 = plt.plot(list(range(step - 1)), obstacle_distance, label="Distance (m)")
                     plt.legend()
                     plt.xlabel("Step")
-                    #plt.savefig("tempplots/" + str(episode))
-                    #plt.show()
+                    plt.savefig("tempplots/" + str(episode))
+                    plt.show()
 
             average_reward = np.mean(all_rewards)
             std_reward = np.std(all_rewards)
@@ -108,15 +105,6 @@ if __name__ == "__main__":
             std_col = (np.std(np.array(all_collisions)/np.array(all_distances)/1000))
             average_speed = sum(all_distances)/sum(all_times)
             std_speed = (np.std(np.array(all_distances)/np.array(all_times)))
-
-            print("ERWIN")
-            print(average_reward)
-            print(std_reward)
-            print(average_col)
-            print(std_col)
-            print(average_speed)
-            print(std_speed)
-            print()
 
             if average_col < min_col:
                 min_col = average_col

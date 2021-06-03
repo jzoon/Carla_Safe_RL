@@ -3,6 +3,8 @@ import math
 from vel_to_acc import *
 
 
+# This class is based on the Intelligent Driver Model (Treiber et al.) and determines the desired acceleration and
+# corresponding action to follow the leading vehicle based on this model.
 class CarFollowing:
     delta = 4
     d_0 = 30

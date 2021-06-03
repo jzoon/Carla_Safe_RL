@@ -6,6 +6,8 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
+# It was changed slightly to use it for the "Safe Reinforcement Learning by Shielding for Autonomous Vehicles" thesis
+
 """Spawn NPCs into the simulation"""
 
 import glob

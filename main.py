@@ -10,7 +10,7 @@ if ALT_LOSS:
 else:
     from DQNAgent import *
 
-
+# This is the main file of the learning process, and can be seen as the agent, which interacts with the environment.
 if __name__ == '__main__':
     epsilon = 1
     ep_rewards = []
@@ -29,20 +29,20 @@ if __name__ == '__main__':
 
     if ENVIRONMENT == 1:
         env = CarEnv1()
-    elif ENVIRONMENT == 2:
-        env = CarEnv2()
     else:
-        env = CarEnv3()
+        env = CarEnv2()
 
     model_time = time.time()
     agent = DQNAgent(env.STATE_LENGTH, env.STATE_WIDTH, env.AMOUNT_OF_ACTIONS, model_time)
 
+    # Start parallel training.
     trainer_thread = Thread(target=agent.train_in_loop, daemon=True)
     trainer_thread.start()
     while not agent.training_initialized:
         time.sleep(0.01)
     agent.get_qs(np.ones((1, env.STATE_LENGTH, env.STATE_WIDTH)))
 
+    # Loop through episodes
     for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         if episode % 100 == 0 and ENVIRONMENT == 2:
             created = False
@@ -64,13 +64,16 @@ if __name__ == '__main__':
         episode_start = time.time()
         shield_overrules_episode = 0
 
+        # Start one episode until the episode is finished, loop through steps.
         while not done:
+            # Epsilon greedy
             if np.random.random() > epsilon:
                 action_list = np.argsort(agent.get_qs(np.expand_dims(current_state, axis=0)))[::-1]
             else:
                 action_list = list(range(env.AMOUNT_OF_ACTIONS))
                 random.shuffle(action_list)
 
+            # Environment step
             new_state, reward, done, chosen_action = env.step(action_list)
 
             update_done = done
@@ -80,6 +83,7 @@ if __name__ == '__main__':
             episode_reward += reward
             agent.update_replay_memory((current_state, chosen_action, reward, new_state, update_done))
 
+            # Fabricate experience, one of the shield-based learning techniques
             if chosen_action != action_list[0]:
                 if FABRICATE_ACTIONS:
                     agent.update_replay_memory((current_state, action_list[0], -SIMPLE_REWARD_B, current_state, True))
@@ -91,6 +95,7 @@ if __name__ == '__main__':
         for actor in env.actor_list:
             actor.destroy()
 
+        # Update KPI's
         distances.append(max(1, env.get_KPI()[0]))
         if ENVIRONMENT == 2 and step < 3:
             collisions.append(0)
@@ -120,15 +125,18 @@ if __name__ == '__main__':
             save_collisions.append(sum(collisions[-AGGREGATE_STATS_EVERY:])/len(collisions[-AGGREGATE_STATS_EVERY:]))
             save_overrules.append(average_overrule)
 
+        # Decrease epsilon
         if epsilon > 0:
             epsilon -= 1/(EXPLORATION_STOP*EPISODES)
             epsilon = max(0, epsilon)
 
+        # Save intermediate model
         if episode == 800:
             agent.model.save(f'models/{MODEL_NAME}__{int(model_time)}-800.model')
         elif episode == 900:
             agent.model.save(f'models/{MODEL_NAME}__{int(model_time)}-900.model')
 
+    # Save final model and data
     all_data = np.array([save_episodes, save_distances, save_times, save_collisions, save_rewards, save_overrules]).transpose()
     np.savetxt(r"manual_logs/" + MODEL_NAME + "-" + str(int(model_time)) + ".csv", all_data, delimiter=",", header="episode,distance,time,collision,return,overrule", comments="")
 

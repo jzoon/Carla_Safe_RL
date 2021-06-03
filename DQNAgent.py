@@ -9,7 +9,10 @@ import tensorflow as tf
 import time
 import random
 
+
+# This class defines the DDQN agent methods, including the neural network and training.
 class DQNAgent:
+    # Initializes the neural network.
     def __init__(self, state_length, state_width, output_size, model_time):
         self.state_length = state_length
         self.state_width = state_width
@@ -28,6 +31,7 @@ class DQNAgent:
         self.last_logged_episode = 0
         self.training_initialized = False
 
+    # Creates the neural network model, with an input layer, output layer and three hidden layers.
     def create_model(self):
         inputs = layers.Input(shape=(self.state_length, self.state_width,))
         layer1 = layers.Dense(32, activation="relu")(inputs)
@@ -40,9 +44,12 @@ class DQNAgent:
 
         return model
 
+    # Adds an experience to the replay memory.
     def update_replay_memory(self, transition):
         self.replay_memory.append(transition)
 
+    # Trains the DDQN. If the replay buffer is large enough, a minibatch is sampled on which the DDQN is trained by
+    # using the Bellman equation and the target network.
     def train(self):
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
             return
@@ -87,12 +94,15 @@ class DQNAgent:
         with self.graph.as_default():
             self.model.fit(np.array(X), np.array(y), batch_size=TRAINING_BATCH_SIZE, verbose=0, shuffle=False, callbacks=[self.tensorboard] if log_this_step else None)
 
+    # Updates the target network.
     def update_target_network(self):
         self.target_model.set_weights(self.model.get_weights())
 
+    # Returns the Q-values for a state.
     def get_qs(self, state):
         return self.model.predict(state)[0]
 
+    # Is used to be able to train the network in a loop parallel to the agent exploring the environment.
     def train_in_loop(self):
         X = np.random.uniform(size=(1, self.state_length, self.state_width)).astype(np.float32)
         y = np.random.uniform(size=(1, self.output_size)).astype(np.float32)
@@ -110,6 +120,7 @@ class DQNAgent:
             time.sleep(0.01)
 
 
+# This class initializes the TensorBoard, which can be used to visualize the process.
 class ModifiedTensorBoard(TensorBoard):
     # Overriding init to set initial step and writer (we want one log file for all .fit() calls)
     def __init__(self, **kwargs):
